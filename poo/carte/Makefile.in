@@ -1,7 +1,7 @@
 CC      = __COMPILER__
 CFLAGS  = -W -Wall -O2 -pipe -g
 LDFLAGS = 
-EXEC    = poo-proj1
+EXEC    = __PROJECT_NAME__
 
 SRC=$(wildcard *.cxx)
 OBJ=$(SRC:.cxx=.o)

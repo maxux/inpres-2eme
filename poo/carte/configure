@@ -1,11 +1,14 @@
 #!/bin/bash
 
+# Setting project name
+PROJECT_NAME="poo-proj1"
+
 # User Defined Variables
 TRY_COMPILER="g++"
 
 # List can be defined using
 # $ cat *.c *.h | grep '#include <' | cut -d '<' -f 2 | cut -d '>' -f 1 | sort | uniq | xargs
-HEADERS=(stdio.h stdlib.h)
+HEADERS=(iostream string.h)
 
 # Core Variables
 TMP_FILE_IN="/tmp/compilz-configure.c"
@@ -53,4 +56,4 @@ echo "Checking headers files..."
 rm $TMP_FILE_IN $TMP_FILE_OUT 2> /dev/null
 
 echo "Creating Makefile..."
-sed s/'__COMPILER__'/$COMPILER/ < Makefile.in > Makefile
+sed "s/__COMPILER__/${COMPILER}/;s/__PROJECT_NAME__/${PROJECT_NAME}/" < Makefile.in > Makefile
