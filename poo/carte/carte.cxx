@@ -1,14 +1,9 @@
 #include <iostream>
+#include <fstream>
 #include <string.h>
 #include "carte.hxx"
 
 using namespace std;
-
-Carte::Carte() {
-	*_name = '\0';
-	_serie = NULL;
-	_id = -1;
-}
 
 Carte::Carte(const char *name, const char *serie, int id) {
 	strcpy(_name, name);
@@ -28,16 +23,30 @@ Carte::Carte(Carte &original) {
 	_id = original._id;
 }
 
-void Carte::set_id(int id) {
+void Carte::Affiche() const {
+	if(_id > 0)
+		cout << "ID   : " << _id << endl;
+	else cout << "ID   : <unknown>" << endl;
+		
+	if(*_name)
+		cout << "Nom  : " << _name << endl;	
+	else cout << "Nom  : <unknown>" << endl;
+	
+	if(_serie)
+		cout << "Serie: " << _serie << endl;
+	else cout << "Serie: <unknown>" << endl;
+}
+
+void Carte::setNumero(int id) {
 	_id = id;
 }
 
-void Carte::set_name(const char *name) {
+void Carte::setNomCarte(const char *name) {
 	strncpy(_name, name, sizeof(_name));
 	_name[sizeof(_name) - 1] = '\0';
 }
 
-void Carte::set_serie(const char *serie) {
+void Carte::setNomSerie(const char *serie) {
 	if(_serie != NULL)
 		delete _serie;
 	
@@ -45,17 +54,52 @@ void Carte::set_serie(const char *serie) {
 	strcpy(_serie, serie);
 }
 
-void Carte::display() {
-	if(_id > -1) {
-		cout << "ID   : " << _id << endl;
+/* Return Values */
+char* Carte::getNomCarte() {
+	return _name;
+}
+
+char* Carte::getNomSerie() {
+	return _serie;
+}
+
+int Carte::getNumero() {
+	return _id;
+}
+
+/* Overload */
+void Carte::Affiche(ostream &stream) const {
+	if(_id > 0)
+		stream << "ID   : " << _id << endl;
+	else stream << "ID   : <unknown>" << endl;
 		
-		if(*_name)
-			cout << "Nom  : " << _name << endl;	
-		else cout << "Nom  : <unknown>" << endl;
-		
-		if(_serie)
-			cout << "Serie: " << _serie << endl;
-		else cout << "Serie: <unknown>" << endl;
-		
-	} else cerr << "Invalid ID" << endl;
+	if(*_name)
+		stream << "Nom  : " << _name << endl;	
+	else stream << "Nom  : <unknown>" << endl;
+	
+	if(_serie)
+		stream << "Serie: " << _serie << endl;
+	else stream << "Serie: <unknown>" << endl;
+}
+
+ostream & operator << (ostream &stream, Carte const &carte) {
+	carte.Affiche(stream);
+	return stream;
+}
+
+
+void Carte::Encode(istream &stream) {
+	cout << "Nom: ";
+	stream >> _name;
+	
+	cout << "Serie: ";
+	stream >> _serie;
+	
+	cout << "ID: ";
+	stream >> _id;
+}
+
+istream & operator >> (istream &stream, Carte &carte) {
+	carte.Encode(stream);
+	return stream;
 }

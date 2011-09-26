@@ -1,6 +1,8 @@
 #ifndef __CARTE_H
 	#define __CARTE_H
 	
+	#include <iostream>
+	
 	class Carte {
 		private:
 			char _name[30];
@@ -9,15 +11,28 @@
 		
 		public:
 			/* Construct */
-			Carte();
-			Carte(const char *name, const char *serie, int id);
+			Carte(const char *name = "New", const char *serie = "New", int id = -1);
 			Carte(Carte &original);
 			
 			/* Affecting */
-			void set_id(int id);
-			void set_name(const char *name);
-			void set_serie(const char *serie);
+			void setNumero(int id);
+			void setNomCarte(const char *name);
+			void setNomSerie(const char *serie);
 			
-			void display();
+			/* Return */
+			char* getNomCarte();
+			char* getNomSerie();
+			int getNumero();
+			
+			/* Display */
+			void Affiche() const;
+			void Affiche(std::ostream &stream) const;
+			
+			/* Encoding */
+			void Encode(std::istream &stream);
+			
+			/* Overload */
+			friend std::ostream & operator << (std::ostream &flux, const Carte &carte);
+			friend std::istream & operator >> (std::istream &flux, Carte &carte);
 	};
 #endif
