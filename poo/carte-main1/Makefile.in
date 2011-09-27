@@ -15,7 +15,7 @@ $(EXEC): $(OBJ)
 	$(CC) -o $@ -c $< $(CFLAGS)
 
 clean:
-	rm -fv *.o
+	rm -v *.o
 
 mrproper: clean
-	rm -fv $(EXEC)
+	rm -v $(EXEC)
