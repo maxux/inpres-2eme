@@ -3,19 +3,19 @@ CFLAGS  = -W -Wall -O2 -pipe -g
 LDFLAGS = 
 EXEC    = __PROJECT_NAME__
 
-SRC=$(wildcard *.cxx)
-OBJ=$(SRC:.cxx=.o)
+SRC=$(wildcard *.__CODE_EXTENSION__)
+OBJ=$(SRC:.__CODE_EXTENSION__=.o)
 
 all: $(EXEC)
 
 $(EXEC): $(OBJ)
 	$(CC) -o $@ $^ $(LDFLAGS)
 	
-%.o: %.cxx %.hxx
+%.o: %.__CODE_EXTENSION__ %.__HEADER_EXTENSION__
 	$(CC) -o $@ -c $< $(CFLAGS)
 
 clean:
-	rm -v *.o
+	rm -fv *.o
 
 mrproper: clean
-	rm -v $(EXEC)
+	rm -fv $(EXEC)

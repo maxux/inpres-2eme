@@ -1,7 +1,7 @@
-CC      = x86_64-pc-linux-gnu-g++
+CC      = i686-pc-linux-gnu-g++
 CFLAGS  = -W -Wall -O2 -pipe -g
 LDFLAGS = 
-EXEC    = main1
+EXEC    = main2
 
 SRC=$(wildcard *.cxx)
 OBJ=$(SRC:.cxx=.o)
@@ -15,7 +15,7 @@ $(EXEC): $(OBJ)
 	$(CC) -o $@ -c $< $(CFLAGS)
 
 clean:
-	rm -v *.o
+	rm -fv *.o
 
 mrproper: clean
-	rm -v $(EXEC)
+	rm -fv $(EXEC)

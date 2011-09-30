@@ -1,14 +1,30 @@
 #!/bin/bash
 
+# Value: c / c++
+PROJECT_TYPE="c++"
+
 # Setting project name
-PROJECT_NAME="main1"
+PROJECT_NAME="main2"
 
-# User Defined Variables
-TRY_COMPILER="g++"
+##########################################################################
+# Autodefined variables
+if [ "$PROJECT_TYPE" == "c" ]; then
+	TRY_COMPILER="gcc"
+	CODE_EXTENSION="c"
+	HEADER_EXTENSION="h"
+	
+elif [ "$PROJECT_TYPE" == "c++" ]; then
+	TRY_COMPILER="g++"
+	CODE_EXTENSION="cxx"
+	HEADER_EXTENSION="hxx"
+else
+	echo "Invalid project type"
+	exit 1
+fi
 
-# List can be defined using
+# List of defined files
 # $ cat *.c *.h | grep '#include <' | cut -d '<' -f 2 | cut -d '>' -f 1 | sort | uniq | xargs
-HEADERS=(iostream string.h)
+HEADERS=($(cat *.${CODE_EXTENSION} *.${HEADER_EXTENSION} | grep '#include <' | cut -d '<' -f 2 | cut -d '>' -f 1 | sort | uniq | xargs))
 
 # Core Variables
 TMP_FILE_IN="/tmp/compilz-configure.c"
@@ -56,4 +72,4 @@ echo "Checking headers files..."
 rm $TMP_FILE_IN $TMP_FILE_OUT 2> /dev/null
 
 echo "Creating Makefile..."
-sed "s/__COMPILER__/${COMPILER}/;s/__PROJECT_NAME__/${PROJECT_NAME}/" < Makefile.in > Makefile
+sed "s/__COMPILER__/${COMPILER}/;s/__PROJECT_NAME__/${PROJECT_NAME}/;s/__CODE_EXTENSION__/${CODE_EXTENSION}/;s/__HEADER_EXTENSION__/${HEADER_EXTENSION}/" < Makefile.in > Makefile

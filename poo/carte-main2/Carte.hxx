@@ -32,7 +32,7 @@
 			void Encode(std::istream &stream);
 			
 			/* Overload */
-			friend std::ostream & operator << (std::ostream &flux, const Carte &carte);
+			friend std::ostream & operator << (std::ostream &flux, Carte const &carte);
 			friend std::istream & operator >> (std::istream &flux, Carte &carte);
 	};
 #endif
