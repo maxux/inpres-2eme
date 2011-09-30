@@ -1,7 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <string.h>
-#include "carte.hxx"
+#include "Carte.hxx"
 
 using namespace std;
 

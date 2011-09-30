@@ -39,7 +39,7 @@ int main()
 	cout<<"Le score associe a la caracteristique est: "<<p3->getScore()<<endl;
 	delete p3;
 	attente();
-	cout<<"(7)Test des operateurs << et >>"<<endl;
+	/* cout<<"(7)Test des operateurs << et >>"<<endl;
 	CaractScore c4;
 	cout<<"Encodage de la caracteristique et du score d'une carte"<<endl;
 	cin>>c4;
@@ -51,7 +51,7 @@ int main()
 	cout<<CaractScore::AUTORITE<<endl;
 	attente();
 	CaractScore::BEST_QUALITE_STAR.Affiche();
-	attente();
+	attente(); */
 	CaractScore c5(CaractScore::BEST_AMITIE);
 	c5.Affiche();
 	return 0;
