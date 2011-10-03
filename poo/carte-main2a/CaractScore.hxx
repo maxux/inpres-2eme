@@ -16,7 +16,7 @@
 			static const char QUALITE_STAR[];
 
 			static const CaractScore BEST_AMITIE;
-			static const CaractScore BEST_QUALITE_STAR;
+			static CaractScore BEST_QUALITE_STAR;
 			
 			void Affiche();
 

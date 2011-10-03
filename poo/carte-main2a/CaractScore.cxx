@@ -69,3 +69,4 @@ istream & operator >> (istream &stream, CaractScore &caract) {
 
 /* Static Declarations */
 const CaractScore CaractScore::BEST_AMITIE("Amitié", 100);
+CaractScore CaractScore::BEST_QUALITE_STAR;

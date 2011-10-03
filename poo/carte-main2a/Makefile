@@ -1,7 +1,7 @@
 CC      = i686-pc-linux-gnu-g++
 CFLAGS  = -W -Wall -O2 -pipe -g
 LDFLAGS = 
-EXEC    = main2
+EXEC    = main2a
 
 SRC=$(wildcard *.cxx)
 OBJ=$(SRC:.cxx=.o)

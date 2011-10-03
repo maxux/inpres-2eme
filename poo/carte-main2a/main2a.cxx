@@ -50,7 +50,7 @@ int main()
 	attente();
 	cout<<CaractScore::AUTORITE<<endl;
 	attente();
-	// CaractScore::BEST_QUALITE_STAR.Affiche();
+	CaractScore::BEST_QUALITE_STAR.Affiche();
 	attente();
 	CaractScore c5(CaractScore::BEST_AMITIE);
 	c5.Affiche();
