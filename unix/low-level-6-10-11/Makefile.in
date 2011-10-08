@@ -1,17 +1,17 @@
-CC      = x86_64-pc-linux-gnu-g++
+CC      = __COMPILER__
 CFLAGS  = -W -Wall -O2 -pipe -g
 LDFLAGS = 
-EXEC    = main2b
+EXEC    = __PROJECT_NAME__
 
-SRC=$(wildcard *.cxx)
-OBJ=$(SRC:.cxx=.o)
+SRC=$(wildcard *.__CODE_EXTENSION__)
+OBJ=$(SRC:.__CODE_EXTENSION__=.o)
 
 all: $(EXEC)
 
 $(EXEC): $(OBJ)
 	$(CC) -o $@ $^ $(LDFLAGS)
 	
-%.o: %.cxx %.hxx
+%.o: %.__CODE_EXTENSION__ %.__HEADER_EXTENSION__
 	$(CC) -o $@ -c $< $(CFLAGS)
 
 clean:

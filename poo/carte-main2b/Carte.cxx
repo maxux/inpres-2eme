@@ -5,6 +5,14 @@
 
 using namespace std;
 
+Carte::Carte() {
+	Carte("New", "New", 0, "New", 0);
+}
+
+Carte::Carte(const char *name, const char *serie, int id) {
+	Carte(name, serie, id, "New", 0);
+}
+			
 Carte::Carte(const char *name, const char *serie, int id, const char *caract_name, int caract_score) {
 	strcpy(_name, name);
 	
@@ -17,25 +25,8 @@ Carte::Carte(const char *name, const char *serie, int id, const char *caract_nam
 }
 
 Carte::Carte(const char *name, const char *serie, int id, CaractScore &original) {
-	strcpy(_name, name);
-	
-	_serie = new char[strlen(serie) + 1];
-	strcpy(_serie, serie);
-	
-	Carte::setCaractScore(original);
-	
-	_id = id;
-}
-
-Carte::Carte() {
-	strcpy(_name, "New");
-	
-	_serie = new char[] = "New";
-	// strcpy(_serie, "New");
-	
-	Carte::setCaractScore("New", 0);
-	
-	_id = 0;
+	Carte(name, serie, id, NULL, 0);
+	setCaractScore(original);
 }
 
 Carte::Carte(Carte &original) {
@@ -129,12 +120,17 @@ istream & operator >> (istream &stream, Carte &carte) {
 }
 
 /* Aggrégation */
-void setCaractScore(const char *name, int score) {
-	caract.setNomCaract(name);
-	catact.setScore(score);
+void Carte::setCaractScore(const char *name, int score) {
+	//caract.setNomCaract(name);
+	//caract.setScore(score);
 }
 
-void setCaractScore(CaractScore &original) {
-	caract.setNomCaract(original.getNomCaract);
-	catact.setScore(original.getScore);
+void Carte::setCaractScore(CaractScore &original) {
+	//caract.setNomCaract(original.getNomCaract);
+	//caract.setScore(original.getScore);
+}
+
+CaractScore Carte::getCaractScore() {
+	
+	return caract;
 }

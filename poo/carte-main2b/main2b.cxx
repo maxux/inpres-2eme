@@ -65,7 +65,7 @@ int main()
 	c6.Affiche();
 	attente();
 	cout<<c6.getCaractScore();
-	exit(0);
+	return 0;
 }
 
 void attente()

@@ -9,13 +9,14 @@
 			char _name[30];
 			char *_serie;
 			int _id;
-			CaractScore *caract;
+			CaractScore caract;
 		
 		public:
 			/* Construct */
-			Carte(const char *name = "New", const char *serie = "New", int id = -1, const char *caract_name = "New", int caract_score = 0);
-			Carte(const char *name = "New", const char *serie = "New", int id = -1, CaractScore &original);
 			Carte();
+			Carte(const char *name, const char *serie, int id);
+			Carte(const char *name, const char *serie, int id, const char *caract_name, int caract_score);
+			Carte(const char *name, const char *serie, int id, CaractScore &original);
 			Carte(Carte &original);
 			
 			/* Affecting */
@@ -30,6 +31,7 @@
 			char* getNomCarte();
 			char* getNomSerie();
 			int getNumero();
+			CaractScore getCaractScore();
 			
 			/* Display */
 			void Affiche() const;
