@@ -9,6 +9,7 @@
 		public:
 			CaractScore(const char *name = "<unknown>", int score = 0);
 			// virtual ~CaractScore();
+			void __construct(const char *name, int score);
 
 			static const char AMITIE[];
 			static const char AUDACE[];
@@ -18,7 +19,7 @@
 			static const CaractScore BEST_AMITIE;
 			static CaractScore BEST_QUALITE_STAR;
 			
-			void Affiche();
+			void Affiche() const;
 
 			void setNomCaract(const char *name);
 			void setScore(int score);

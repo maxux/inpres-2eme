@@ -6,26 +6,19 @@
 using namespace std;
 
 Carte::Carte() {
-	Carte("New", "New", 0, "New", 0);
+	__construct("New", "New", 0, "New", 0);
 }
 
 Carte::Carte(const char *name, const char *serie, int id) {
-	Carte(name, serie, id, "New", 0);
+	__construct(name, serie, id, "New", 0);
 }
 			
 Carte::Carte(const char *name, const char *serie, int id, const char *caract_name, int caract_score) {
-	strcpy(_name, name);
-	
-	_serie = new char[strlen(serie) + 1];
-	strcpy(_serie, serie);
-	
-	Carte::setCaractScore(caract_name, caract_score);
-	
-	_id = id;
+	__construct(name, serie, id, caract_name, caract_score);
 }
 
 Carte::Carte(const char *name, const char *serie, int id, CaractScore &original) {
-	Carte(name, serie, id, NULL, 0);
+	__construct(name, serie, id, "New", 0);
 	setCaractScore(original);
 }
 
@@ -36,20 +29,35 @@ Carte::Carte(Carte &original) {
 	strcpy(_serie, original._serie);
 	
 	_id = original._id;
+	
+	setCaractScore(original.caract);
+}
+
+void Carte::__construct(const char *name, const char *serie, int id, const char *caract_name, int caract_score) {
+	strcpy(_name, name);
+	
+	_serie = new char[strlen(serie) + 1];
+	strcpy(_serie, serie);
+	
+	caract.__construct(caract_name, caract_score);
+	
+	_id = id;
 }
 
 void Carte::Affiche() const {
 	if(_id > 0)
-		cout << "ID   : " << _id << endl;
-	else cout << "ID   : <unknown>" << endl;
+		cout << "ID    : " << _id << endl;
+	else cout << "ID    : <unknown>" << endl;
 		
 	if(*_name)
-		cout << "Nom  : " << _name << endl;	
-	else cout << "Nom  : <unknown>" << endl;
+		cout << "Nom   : " << _name << endl;	
+	else cout << "Nom   : <unknown>" << endl;
 	
 	if(_serie)
-		cout << "Serie: " << _serie << endl;
-	else cout << "Serie: <unknown>" << endl;
+		cout << "Serie : " << _serie << endl;
+	else cout << "Serie : <unknown>" << endl;
+	
+	caract.Affiche();
 }
 
 void Carte::setNumero(int id) {
@@ -95,6 +103,8 @@ void Carte::Affiche(ostream &stream) const {
 	if(_serie)
 		stream << "Serie: " << _serie << endl;
 	else stream << "Serie: <unknown>" << endl;
+	
+	stream << caract;
 }
 
 ostream & operator << (ostream &stream, Carte const &carte) {
@@ -112,6 +122,8 @@ void Carte::Encode(istream &stream) {
 	
 	cout << "ID: ";
 	stream >> _id;
+	
+	stream >> caract;
 }
 
 istream & operator >> (istream &stream, Carte &carte) {
@@ -121,16 +133,14 @@ istream & operator >> (istream &stream, Carte &carte) {
 
 /* Aggrégation */
 void Carte::setCaractScore(const char *name, int score) {
-	//caract.setNomCaract(name);
-	//caract.setScore(score);
+	caract.__construct(name, score);
 }
 
 void Carte::setCaractScore(CaractScore &original) {
-	//caract.setNomCaract(original.getNomCaract);
-	//caract.setScore(original.getScore);
+	caract.setNomCaract(original.getNomCaract());
+	caract.setScore(original.getScore());
 }
 
 CaractScore Carte::getCaractScore() {
-	
 	return caract;
 }

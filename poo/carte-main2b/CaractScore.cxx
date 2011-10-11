@@ -11,11 +11,15 @@ const char CaractScore::AUTORITE[] 	= "Autorité";
 const char CaractScore::QUALITE_STAR[] 	= "Qualite Star";
 
 CaractScore::CaractScore(const char *name, int score) {
+	__construct(name, score);
+}
+
+void CaractScore::__construct(const char *name, int score) {
 	setNomCaract(name);
 	setScore(score);
 }
 
-void CaractScore::Affiche() {
+void CaractScore::Affiche() const {
 	cout << "Nom   : " << _name << endl;
 	cout << "Scrore: " << _score << endl;
 }

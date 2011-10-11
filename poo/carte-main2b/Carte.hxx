@@ -19,6 +19,9 @@
 			Carte(const char *name, const char *serie, int id, CaractScore &original);
 			Carte(Carte &original);
 			
+			/* Real Init */
+			void __construct(const char *name, const char *serie, int id, const char *caract_name, int caract_score);
+			
 			/* Affecting */
 			void setNumero(int id);
 			void setNomCarte(const char *name);
