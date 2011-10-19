@@ -99,15 +99,15 @@ bool CaractScore::operator < (CaractScore &rval) {
 }
 
 CaractScore & CaractScore::operator ++ () {
+	/* Add: Check Max Value */
 	_score += 5;
 	return *this;
 }
 
 CaractScore CaractScore::operator ++ (int) {
 	CaractScore copy = *this;
-	
-	// ADD: Check MAX Value
-	_score += 5;		
+
+	++(*this);
 	return copy;
 }
 

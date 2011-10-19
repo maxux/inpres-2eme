@@ -1,12 +1,15 @@
-#include"Date.h"
-#include"Person.h"
-#include"AuthorisedPerson.h"
-#include"Collectionneur.h"
-#include"ConcepteurAlbum.h"
+#include"Date.hxx"
+#include"Person.hxx"
+#include"AuthorisedPerson.hxx"
+#include"Collectionneur.hxx"
+#include"ConcepteurAlbum.hxx"
+#include <iostream>
+
 void attente();
+using namespace std;
+
 int main()
 {
-
 	cout<<"(1)Test classe Person"<<endl;
 	Person p;
 	cin>>p;
