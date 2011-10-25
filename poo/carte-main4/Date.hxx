@@ -8,10 +8,21 @@
 			Date();
 			Date(Date &original);
 			Date(char *date);
+			virtual ~Date();
+			
+			/* Setters */
+			void setDate(const char *date);
+			
+			/* Getters */
+			const char * getDate() const;
+			unsigned short getDay();
+			unsigned short getMonth();
+			unsigned short getYear();
 		
 		private:
-			unsigned char _day;
-			unsigned char _month;
-			unsigned char _year;
+			unsigned short _day;
+			unsigned short _month;
+			unsigned short _year;
+			char *_to_char;
 	};
 #endif

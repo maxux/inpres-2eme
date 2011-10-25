@@ -1,18 +1,23 @@
 #include "AuthorisedPerson.hxx"
+#include <string.h>
 using namespace std;
 
-AuthorisedPerson::AuthorisedPerson() {
-	
+AuthorisedPerson::AuthorisedPerson() : Person() {
+	*_login = '\0';
 }
 
-AuthorisedPerson::AuthorisedPerson(AuthorisedPerson &original) {
-	
+AuthorisedPerson::AuthorisedPerson(const char *name, const char *surname, const char *born, const char *nation, const char *login) : Person(name, surname, born, nation) {
+	setLogin(login);
 }
 
-char * AuthorisedPerson::getIdentification() {
-	
+AuthorisedPerson::AuthorisedPerson(AuthorisedPerson &original) : Person(original.getNom(), original.getPrenom(), original.getDateNais(), original.getNationalite()) {
+	strcpy(_login, original.getLogin());
 }
 
-void AuthorisedPerson::setLogin(char *login) {
-	
+void AuthorisedPerson::setLogin(const char *login) {
+	strcpy(_login, login);
+}
+
+const char * AuthorisedPerson::getLogin() {
+	return _login;
 }

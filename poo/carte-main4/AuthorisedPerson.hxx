@@ -8,11 +8,14 @@
 	class AuthorisedPerson : public Person {
 		public:
 			AuthorisedPerson();
+			AuthorisedPerson(const char *name, const char *surname, const char *born, const char *nation, const char *login);
 			AuthorisedPerson(AuthorisedPerson &original);
-			virtual char * getIdentification();
 			
 			/* Setters */
-			virtual void setLogin(char *login);
+			virtual void setLogin(const char *login);
+			
+			/* Getters */
+			virtual const char * getLogin();
 		
 		private:
 			char _login[32];

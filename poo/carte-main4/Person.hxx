@@ -23,10 +23,10 @@
 			void setNationalite(const char *name);
 			
 			/* Getters */
-			char * getNom();
-			char * getPrenom();
-			char * getDateNais();
-			char * getNationalite();
+			const char * getNom();
+			const char * getPrenom();
+			const char * getDateNais();
+			const char * getNationalite();
 			
 			/* Overload */
 			friend std::ostream & operator << (ostream &flux, Person const &source);
@@ -41,6 +41,7 @@
 			char _name[32];
 			char _surname[32];
 			char _nation[32];
-			Date *_born;
+			//Date _born;
+			char _born[11];
 	};
 #endif

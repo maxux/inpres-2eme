@@ -10,7 +10,8 @@
 		public:
 			ConcepteurAlbum();
 			ConcepteurAlbum(ConcepteurAlbum &original);
-			ConcepteurAlbum(const char *name, const char *surname, const char *born, const char *nation, const char *login, const char *collection_name);
+			ConcepteurAlbum(const char *name, const char *surname, const char *born, const char *nation, const char *login, const char *societe_name);
+			virtual ~ConcepteurAlbum();
 			virtual char * getIdentification();
 			
 			/* Display */
@@ -18,6 +19,9 @@
 			
 			/* Setters */
 			void setNomSociete(const char *name);
+			
+			/* Getters */
+			const char * getNomSociete();
 			
 			/* Overload */
 			friend std::ostream & operator << (ostream &flux, ConcepteurAlbum const &source);
@@ -28,5 +32,6 @@
 		
 		private:
 			char _inc_name[32];
+			char *_id;
 	};
 #endif

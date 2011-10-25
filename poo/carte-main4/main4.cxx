@@ -9,7 +9,7 @@ void attente();
 using namespace std;
 
 int main()
-{
+{	
 	cout<<"(1)Test classe Person"<<endl;
 	Person p;
 	cin>>p;
@@ -66,7 +66,7 @@ int main()
 	Person *p5=new Person();
 	p5->setNom("Petit");
 	p5->setPrenom("Eric");
-	p5->setDateNais("5/5/2005");
+	p5->setDateNais("05/05/2005");
 	p5->setNationalite("hollandais");
 	p5->Affiche();
 	attente();
@@ -81,8 +81,7 @@ int main()
 	for(i=0;i<3;i++)
 		vp[i]->Affiche();
 	attente();
-	cout<<endl<<endl;	
-
+	cout<<endl<<endl;
 
 	cout<<"(3)Test classe ConcepteurAlbum et meth. virt. Affiche et getIdentification"<<endl;
 	ConcepteurAlbum ca;
@@ -95,7 +94,7 @@ int main()
 	ca.setPrenom("Fabrice");
 	ca.setDateNais("17/06/1968");
 	ca.setNationalite("belge");
-	ca.setLogin("Leg");
+	ca.setLogin("Leg"); 
 	ca.setNomSociete("Delhaize");
 	cout<<ca;
 	attente();
@@ -121,7 +120,7 @@ int main()
 	cout<<ptca->getIdentification()<<endl;
 	attente();
 	
-
+	return 0;
 }
 
 void attente()

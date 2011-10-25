@@ -7,31 +7,33 @@ Person::Person() {
 	*_name	  = '\0';
 	*_surname = '\0';
 	*_nation  = '\0';
+	
+	*_born    = '\0';
+	_born[10] = '\0';
 }
 
 Person::Person(Person &original) {
 	setNom(original.getNom());
 	setPrenom(original.getPrenom());
+	setDateNais(original.getDateNais());
 	setNationalite(original.getNationalite());
 }
 
 Person::Person(const char *name, const char *surname, const char *born, const char *nation) {
 	setNom(name);
 	setPrenom(surname);
-	// setDateNais(born);
+	setDateNais(born);
 	setNationalite(nation);
 }
 
 char * Person::getIdentification() {
-	
+	return _name;
 }
 
 /* Display */
 void Person::Affiche() {
-	cout << "Nom     : " << _name << endl;
-	cout << "Prénom  : " << _surname << endl;
-	cout << "Nationa : " << _nation << endl;
-	// cout << "Date N. :" << endl;
+	// Redirect to stream cout
+	Affiche(cout);
 }
 
 /* Setters */
@@ -44,7 +46,9 @@ void Person::setPrenom(const char *surname) {
 }
 
 void Person::setDateNais(const char *date) {
-	
+	// _born.setDate(date);
+	strncpy(_born, date, 10);
+	_born[10] = '\0';
 }
 
 void Person::setNationalite(const char *nation) {
@@ -52,19 +56,19 @@ void Person::setNationalite(const char *nation) {
 }
 
 /* Getters */
-char * Person::getNom() {
+const char * Person::getNom() {
 	return _name;
 }
 
-char * Person::getPrenom() {
+const char * Person::getPrenom() {
 	return _surname;
 }
 
-char * Person::getDateNais() {
-	
+const char * Person::getDateNais() {
+	return _born;
 }
 
-char * Person::getNationalite() {
+const char * Person::getNationalite() {
 	return _nation;
 }
 
@@ -73,6 +77,7 @@ void Person::Affiche(ostream &stream) const {
 	stream << "Nom     : " << _name << endl;
 	stream << "Prénom  : " << _surname << endl;
 	stream << "Nationa : " << _nation << endl;
+	stream << "Born on : " << _born << endl << endl;
 }
 
 ostream & operator << (ostream &stream, Person const &source) {
@@ -87,8 +92,13 @@ void Person::Encode(istream &stream) {
 	cout << "Prénom  : ";
 	stream >> _surname;
 	
+	cout << "Born on : ";
+	stream >> _born;
+	
 	cout << "Nationa : ";
 	stream >> _nation;
+	
+	cout << endl;
 }
 
 istream & operator >> (istream &stream, Person &source) {

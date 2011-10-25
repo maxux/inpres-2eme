@@ -11,17 +11,19 @@
 			Collectionneur();
 			Collectionneur(Collectionneur &original);
 			Collectionneur(const char *name, const char *surname, const char *born, const char *nation, const char *login, int nb_collection);
+			virtual ~Collectionneur();
+			
 			virtual char * getIdentification();
 			
 			/* Display */
 			void Affiche();
 			
 			/* Setters */
-			void setNomCollection(const char *name);
+			// void setNomCollection(const char *name);
 			void setNbCollection(int collection);
 			
 			/* Getters */
-			char * getNomCollection();
+			// char * getNomCollection();
 			int getNbCollection();
 			
 			/* Overload */
@@ -34,5 +36,6 @@
 		private:
 			char _name[32];
 			int _nb_collection;
+			char *_id;
 	};
 #endif
