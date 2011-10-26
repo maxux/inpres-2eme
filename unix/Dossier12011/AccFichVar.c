@@ -85,6 +85,10 @@ int FVFermetureFichier(FICHIERVAR *Fich) {
 	debug("[>] Closing files\n");
 
 	/* Closing Data File */
+	lseek(Fich->hdF, sizeof(ENREG) - sizeof(int), SEEK_SET);
+	if(write(Fich->hdF, &PremierLibre, sizeof(PremierLibre)) != sizeof(PremierLibre))
+		return -1;
+		
 	if(close(Fich->hdF))
 		return -1;
 
@@ -124,7 +128,13 @@ int FVAjoutFichier(const char* Info, FICHIERVAR *Fich) {
 		i += 2;
 	
 	/* Writing current id, incrementing i to point to segment count */
-	*(Fich->Index + i++) = PremierLibre;
+	*(Fich->Index + i) = PremierLibre;
+	
+	debug("[ ] New Item ID: %d\n", PremierLibre);
+	debug("[ ] Index Offset: %d\n", i);
+	
+	/* Pointing to Length */
+	i++;
 	
 	/* Spliting write if needed */
 	while(strlen(pInter) > (unsigned) Fich->Taille) {
@@ -149,7 +159,7 @@ int FVAjoutFichier(const char* Info, FICHIERVAR *Fich) {
 		
 		/* No more space after this segment. Stopping. */
 		if(E.Suivant == 0) {
-			UpdateFirstElement(0, Fich);
+			PremierLibre = 0;
 			return 0;
 		}
 	}
@@ -184,37 +194,21 @@ int FVAjoutFichier(const char* Info, FICHIERVAR *Fich) {
 	if(lseek(Fich->hdF, 0, SEEK_SET) == -1)
 		return -1;
 	
-	if(UpdateFirstElement(PremierLibre, Fich) == -1)
-		return -1;
-	
 	return 1;
-}
-
-int UpdateFirstElement(int id, FICHIERVAR *Fich) {
-	/* Skipping data segment, writing directly new first free id */
-	lseek(Fich->hdF, sizeof(ENREG) - sizeof(int), SEEK_SET);
-	
-	if(write(Fich->hdF, &id, sizeof(int)) != sizeof(int))
-		return -1;
-	
-	return 0;
 }
 
 void FVAffiche(FICHIERVAR *Fich) {
 	ENREG E;
-	int i = 0;
+	int i = 1;
 	char Buff[21];
 	
 	Buff[20] = '\0';
 	
-	lseek(Fich->hdF, 0, SEEK_SET);
+	lseek(Fich->hdF, sizeof(E), SEEK_SET);
 	
-	printf("\n");
+	printf("\n[XX] -- %-20s -- [Next: %02d]\n", "First Free Element", PremierLibre);
 	
-	while(1) {
-		if(read(Fich->hdF, &E, sizeof(E)) <= 0)
-			break;
-			
+	while(read(Fich->hdF, &E, sizeof(E)) > 0) {
 		memcpy(Buff, E.Donnee, Fich->Taille);
 		printf("[%02d] -- %-20s -- [Next: %02d]\n", i, Buff, E.Suivant);
 		
@@ -236,4 +230,118 @@ void FVAffiche(FICHIERVAR *Fich) {
 	
 	printf("\n\n");
 	fflush(stdout);
+}
+
+int FVConsultation(int id, FICHIERVAR *Fich) {
+	int i;
+	char *buffer = NULL;
+	index_element_t element;
+	ENREG temp;
+	
+	debug("[>] Entree dans FVConsultation()\n");
+	debug("[ ] Request ID: %d\n", id);
+	
+	if(id > Fich->Taille || id < 0)
+		return -1;
+	
+	/* Affecting Index Structure Element. */
+	element.id     = *(Fich->Index + (id * 2));
+	element.length = *(Fich->Index + (id * 2) + 1);
+		
+	/* Checking if not empty */
+	if(element.id == 0)
+		return -1;
+	
+	debug("[ ] Reading ID: %d\n", element.id);
+	debug("[ ] Record Segment Count: %d\n", element.length);
+	
+	/* Setting next id */
+	temp.Suivant = element.id;
+	
+	buffer = (char*) malloc(sizeof(char) * Fich->Taille * element.length + 1);
+	
+	/* Reading data */
+	for(i = 0; i < element.length; i++) {
+		lseek(Fich->hdF, temp.Suivant * sizeof(temp), SEEK_SET);
+		
+		if(read(Fich->hdF, &temp, sizeof(temp)) != sizeof(temp))
+			return -1;
+		
+		strncat(buffer, temp.Donnee, Fich->Taille);
+	}
+	
+	printf("[+] Data (%d): %s\n", id, buffer);
+	
+	if(buffer != NULL)
+		free(buffer);
+	
+	return 0;
+}
+
+int FVSuppression(int id, FICHIERVAR *Fich) {
+	ENREG remove_item;
+	index_element_t element;
+	int newPremierLibre, i, *indexPointer;
+	
+	debug("[>] Entree dans FVSuppression()\n");
+	debug("[ ] Request ID: %d\n", id);
+	
+	if(id > Fich->Taille || id < 0)
+		return -1;
+	
+	/* Affecting Index Structure Element. */
+	element.id     = *(Fich->Index + (id * 2));
+	element.length = *(Fich->Index + (id * 2) + 1);
+	
+	debug("[ ] Segment ID: %d\n", element.id);
+	debug("[ ] Segment count: %d\n", element.length);
+		
+	/* Checking if not empty */
+	if(element.id == 0)
+		return -1;
+	
+	debug("[ ] Removing ID: %d\n", id);	
+	debug("[ ] Current First Free ID: %d\n", PremierLibre);
+	
+	/* Setting up "First free element" to this Segment */
+	debug("[ ] New First Free ID: %d\n", element.id);
+	newPremierLibre = element.id;
+
+	/* Setting up last data next free id */
+	lseek(Fich->hdF, sizeof(remove_item) * element.id, SEEK_SET);
+	
+	for(i = 0; i < element.length; i++) {
+		if(read(Fich->hdF, &remove_item, sizeof(remove_item)) != sizeof(remove_item))
+			return -1;
+			
+		debug("[+] Removing Segment: %d\n", i);
+		
+		if(remove_item.Suivant != 0)
+			lseek(Fich->hdF, sizeof(remove_item.Suivant), SEEK_SET);
+	}
+	
+	/* Now: remove_item.Suivant is the last Data Segment */
+	lseek(Fich->hdF, -sizeof(remove_item), SEEK_CUR);
+	remove_item.Suivant = PremierLibre;
+	
+	/* Writing new Free Segment */
+	if(write(Fich->hdF, &remove_item, sizeof(remove_item)) != sizeof(remove_item))
+		return -1;
+		
+	PremierLibre = newPremierLibre;
+	
+	debug("[+] Now, First Free ID: %d\n", PremierLibre);
+	
+	/* Updating Index */
+	debug("[ ] Updating Index\n");
+	indexPointer = Fich->Index + (id * 2);
+	
+	while(*indexPointer != 0) {
+		*indexPointer       = *(indexPointer + 2);
+		*(indexPointer + 1) = *(indexPointer + 3);
+		
+		indexPointer += 2;
+	}
+	
+	return 0;
 }

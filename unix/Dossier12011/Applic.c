@@ -39,6 +39,14 @@ int main() {
 
 		FVAffiche(&F);
 	}
+	
+	if(FVConsultation(1, &F) == -1)
+		fprintf(stderr, "[-] ID not found\n");
+	
+	if(FVSuppression(1, &F) == -1)
+		fprintf(stderr, "[-] Cannot remove this ID\n");
+	
+	FVAffiche(&F);
 
 	if(FVFermetureFichier(&F)) {
 		perror("[-] Err. de fermeture du fichier");

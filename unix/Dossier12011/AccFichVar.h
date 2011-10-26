@@ -16,11 +16,18 @@
 		int  Suivant;
 		
 	} ENREG;
-
-	int FVOuvertureFichier(const char *, FICHIERVAR *);
-	int FVFermetureFichier(FICHIERVAR *);
-	int FVAjoutFichier(const char*, FICHIERVAR *);
-	void FVAffiche(FICHIERVAR *);
 	
-	int UpdateFirstElement(int id, FICHIERVAR *Fich);
+	typedef struct {
+		int id;
+		int length;
+		
+	} index_element_t;
+
+	int FVOuvertureFichier(const char *NomFichier, FICHIERVAR *Fich);
+	int FVFermetureFichier(FICHIERVAR *Fich);
+	int FVAjoutFichier(const char *Info, FICHIERVAR *Fich);
+	void FVAffiche(FICHIERVAR *Fich);
+	
+	int FVConsultation(int id, FICHIERVAR *Fich);
+	int FVSuppression(int id, FICHIERVAR *Fich);
 #endif
