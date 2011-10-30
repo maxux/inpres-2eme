@@ -1,5 +1,5 @@
-CC      = gcc
-CFLAGS  = -W -Wall -O2 -pipe -g -D DEBUG
+CC      = i686-pc-linux-gnu-gcc
+CFLAGS  = -W -Wall -O2 -pipe -g -D DEBUG -D COLOR
 LDFLAGS = 
 EXEC    = Applic
 
@@ -18,5 +18,4 @@ clean:
 	rm -fv *.o
 
 mrproper: clean
-	rm -fv $(EXEC)
-	rm -fv Index Data.dat
+	rm -fv $(EXEC) Index Data.dat

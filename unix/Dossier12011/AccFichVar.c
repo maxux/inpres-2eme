@@ -8,6 +8,7 @@
 
 #include "AccFichVar.h"
 #include "Applic.h"
+#include "interface.h"
 
 int PremierLibre;
 
@@ -18,19 +19,19 @@ int FVOuvertureFichier(const char *NomFichier, FICHIERVAR *Fich) {
 	// memcpy(E.Donnee, "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", 20);
 	memset(E.Donnee, '\0', Fich->Taille);
 	
-	debug("[>] Entree dans FVOuvertureFich()\n");
-	debug("[+] Checking files presence...\n");
+	debug("[>] Calling: FVOuvertureFich()\n");
+	debug("[+] FVOuvertureFichier: Checking files presence...\n");
 	
 	if((Fich->hdF = open(NomFichier, O_RDWR)) == -1) {
-		debug("[ ] Creating %s...\n", NomFichier);
+		debug("[ ] FVOuvertureFichier: Creating %s...\n", NomFichier);
 		if((Fich->hdF = open(NomFichier, O_RDWR | O_CREAT, 0644)) == -1)
 			return -1;
 
-		debug("[ ] Creating Index...\n");
+		debug("[ ] FVOuvertureFichier: Creating Index...\n");
 		if((Fich->hdIndex = open("Index", O_RDWR | O_CREAT, 0644)) == -1)
 			return -1;
 
-		debug("[ ] Building data file...\n");
+		debug("[ ] FVOuvertureFichier: Building data file...\n");
 		for(i = 1; i <= Fich->Taille; i++) {
 			if(i == 20)
 				E.Suivant = 0;
@@ -42,47 +43,48 @@ int FVOuvertureFichier(const char *NomFichier, FICHIERVAR *Fich) {
 		}
 		
 		/* Allocating: Index -- [record id][record size] */
-		debug("[ ] Building Index...\n");
+		debug("[ ] FVOuvertureFichier: Building Index...\n");
 		if((Fich->Index = (int*) calloc(Fich->Taille * 2, sizeof(int))) == NULL)
 			return -1;
 		
-		debug("[ ] Writing Index file...\n");
+		debug("[ ] FVOuvertureFichier: Writing Index file...\n");
 		if(write(Fich->hdIndex, Fich->Index, Fich->Taille * sizeof(int) * 2) != (signed)(Fich->Taille * sizeof(int) * 2))
 			return -1;
 
-		debug("[+] Writing successful\n");
+		debug("[+] FVOuvertureFichier: Writing successful\n");
 		PremierLibre = 1;
 		
-		debug("[ ] First free: %d\n", PremierLibre);
+		debug("[ ] FVOuvertureFichier: First free: %d\n", PremierLibre);
 		
 		return 0;
 	}
 	
-	debug("[ ] Reading data file...\n");
+	debug("[ ] FVOuvertureFichier: Reading data file...\n");
 	if(read(Fich->hdF, &E, Fich->Taille + sizeof(int)) != (signed)(Fich->Taille + sizeof(int)))
 		return -1;
 
 	PremierLibre = E.Suivant;
-	debug("[ ] First free: %d\n", PremierLibre);
+	debug("[ ] FVOuvertureFichier: First free: %d\n", PremierLibre);
 	
-	debug("[ ] Allocating index...\n");
+	debug("[ ] FVOuvertureFichier: Allocating index...\n");
 	if((Fich->Index = (int*)malloc(Fich->Taille * sizeof(int) * 2)) == NULL)
 		return -1;
 
-	debug("[ ] Opening Index...\n");
+	debug("[ ] FVOuvertureFichier: Opening Index...\n");
 	if((Fich->hdIndex = open("Index", O_RDWR)) == -1)
 		return -1;
 	
-	debug("[ ] Loading index...\n");
+	debug("[ ] FVOuvertureFichier: Loading index...\n");
 	if(read(Fich->hdIndex, Fich->Index, Fich->Taille * sizeof(int)) != (signed)(Fich->Taille * sizeof(int)))
 		return -1;
 	
-	debug("[+] Reading files successfull\n");
+	debug("[+] FVOuvertureFichier: Reading files successfull\n");
 	return 0;
 }
 
 int FVFermetureFichier(FICHIERVAR *Fich) {
-	debug("[>] Closing files\n");
+	debug("[>] Calling: FVFermetureFichier\n");
+	debug("[>] FVFermetureFichier: Closing files\n");
 
 	/* Closing Data File */
 	lseek(Fich->hdF, sizeof(ENREG) - sizeof(int), SEEK_SET);
@@ -92,7 +94,7 @@ int FVFermetureFichier(FICHIERVAR *Fich) {
 	if(close(Fich->hdF))
 		return -1;
 
-	debug("[ ] Commit Index...\n");
+	debug("[ ] FVFermetureFichier: Commit Index...\n");
 	/* Commit Index File */
 	lseek(Fich->hdIndex, 0, SEEK_SET);
 	if(write(Fich->hdIndex, Fich->Index, sizeof(int) * Fich->Taille * 2) != (signed) sizeof(int) * Fich->Taille * 2)
@@ -102,7 +104,7 @@ int FVFermetureFichier(FICHIERVAR *Fich) {
 	if(close(Fich->hdIndex))
 		return -1;
 	
-	debug("[+] Files closed...\n");
+	debug("[+] FVFermetureFichier: Files closed...\n");
 		
 	return 0;
 }
@@ -113,14 +115,14 @@ int FVAjoutFichier(const char* Info, FICHIERVAR *Fich) {
 	const char *pInter = Info;
 	int i;
 	
-	debug("[>] Entree dans FVAjoutFich()\n");
-	debug("(##) -- %s -- < Len: %ld\n", Info, strlen(Info));
+	debug("[>] Calling: FVAjoutFich()\n");
+	debug("[ ] FVAjoutFichier: Request: <%s> (Len: %lu)\n", Info, (unsigned long) strlen(Info));
 	
 	/* Checking space */
 	if(PremierLibre == 0)
 		return 0;
 	
-	debug("[ ] First free: %d\n", PremierLibre);
+	debug("[ ] FVAjoutFichier: First free: %d\n", PremierLibre);
 	Pos = PremierLibre;
 	
 	i = 0;
@@ -130,14 +132,16 @@ int FVAjoutFichier(const char* Info, FICHIERVAR *Fich) {
 	/* Writing current id, incrementing i to point to segment count */
 	*(Fich->Index + i) = PremierLibre;
 	
-	debug("[ ] New Item ID: %d\n", PremierLibre);
-	debug("[ ] Index Offset: %d\n", i);
+	debug("[ ] FVAjoutFichier: New Item ID: %d\n", PremierLibre);
+	debug("[ ] FVAjoutFichier: Index Offset: %d\n", i);
 	
 	/* Pointing to Length */
 	i++;
 	
 	/* Spliting write if needed */
 	while(strlen(pInter) > (unsigned) Fich->Taille) {
+		debug("[ ] FVAjoutFichier: Inserting Segment...\n");
+		
 		if(lseek(Fich->hdF, Pos * sizeof(E), SEEK_SET) == -1)
 			return -1;
 			
@@ -159,10 +163,13 @@ int FVAjoutFichier(const char* Info, FICHIERVAR *Fich) {
 		
 		/* No more space after this segment. Stopping. */
 		if(E.Suivant == 0) {
+			debug("[-] FVAjoutFichier: No more space after this\n");
 			PremierLibre = 0;
 			return 0;
 		}
 	}
+	
+	debug("[+] FVAjoutFichier: Writing Last Segment\n");
 	
 	/* Writing last element */
 	if(lseek(Fich->hdF, Pos * (Fich->Taille + sizeof(int)), SEEK_SET) == -1)
@@ -187,12 +194,15 @@ int FVAjoutFichier(const char* Info, FICHIERVAR *Fich) {
 	if(write(Fich->hdF, &E, (Fich->Taille + sizeof(int))) != (signed) (Fich->Taille + sizeof(int)))
 		return -1;
 	
+	debug("[ ] FVAjoutFichier: Updating Index\n");
 	/* Increment Index Segment Count */
 	(*(Fich->Index + i))++;
 	
 	/* Commit First Free */
 	if(lseek(Fich->hdF, 0, SEEK_SET) == -1)
 		return -1;
+	
+	debug("[+] FVAjoutFichier: Insert Request Sucessfull\n");
 	
 	return 1;
 }
@@ -238,8 +248,8 @@ int FVConsultation(int id, FICHIERVAR *Fich) {
 	index_element_t element;
 	ENREG temp;
 	
-	debug("[>] Entree dans FVConsultation()\n");
-	debug("[ ] Request ID: %d\n", id);
+	debug("[>] Calling: FVConsultation()\n");
+	debug("[ ] FVConsultation: Request ID: %d\n", id);
 	
 	if(id > Fich->Taille || id < 0)
 		return -1;
@@ -252,8 +262,8 @@ int FVConsultation(int id, FICHIERVAR *Fich) {
 	if(element.id == 0)
 		return -1;
 	
-	debug("[ ] Reading ID: %d\n", element.id);
-	debug("[ ] Record Segment Count: %d\n", element.length);
+	debug("[ ] FVConsultation: Reading ID: %d\n", element.id);
+	debug("[ ] FVConsultation: Record Segment Count: %d\n", element.length);
 	
 	/* Setting next id */
 	temp.Suivant = element.id;
@@ -270,7 +280,9 @@ int FVConsultation(int id, FICHIERVAR *Fich) {
 		strncat(buffer, temp.Donnee, Fich->Taille);
 	}
 	
-	printf("[+] Data (%d): %s\n", id, buffer);
+	debug("[+] FVConsultation: ID: %d - Buffer Length: %d\n", id, strlen(buffer));
+	
+	printf("%s\n", buffer);
 	
 	if(buffer != NULL)
 		free(buffer);
@@ -283,8 +295,8 @@ int FVSuppression(int id, FICHIERVAR *Fich) {
 	index_element_t element;
 	int newPremierLibre, i, *indexPointer;
 	
-	debug("[>] Entree dans FVSuppression()\n");
-	debug("[ ] Request ID: %d\n", id);
+	debug("[>] Calling: FVSuppression()\n");
+	debug("[ ] FVSuppression: Request ID: %d\n", id);
 	
 	if(id > Fich->Taille || id < 0)
 		return -1;
@@ -293,18 +305,18 @@ int FVSuppression(int id, FICHIERVAR *Fich) {
 	element.id     = *(Fich->Index + (id * 2));
 	element.length = *(Fich->Index + (id * 2) + 1);
 	
-	debug("[ ] Segment ID: %d\n", element.id);
-	debug("[ ] Segment count: %d\n", element.length);
+	debug("[ ] FVSuppression: Segment ID: %d\n", element.id);
+	debug("[ ] FVSuppression: Segment count: %d\n", element.length);
 		
 	/* Checking if not empty */
 	if(element.id == 0)
 		return -1;
 	
-	debug("[ ] Removing ID: %d\n", id);	
-	debug("[ ] Current First Free ID: %d\n", PremierLibre);
+	debug("[ ] FVSuppression: Removing ID: %d\n", id);	
+	debug("[ ] FVSuppression: Current First Free ID: %d\n", PremierLibre);
 	
 	/* Setting up "First free element" to this Segment */
-	debug("[ ] New First Free ID: %d\n", element.id);
+	debug("[ ] FVSuppression: New First Free ID: %d\n", element.id);
 	newPremierLibre = element.id;
 
 	/* Setting up last data next free id */
@@ -314,10 +326,10 @@ int FVSuppression(int id, FICHIERVAR *Fich) {
 		if(read(Fich->hdF, &remove_item, sizeof(remove_item)) != sizeof(remove_item))
 			return -1;
 			
-		debug("[+] Removing Segment: %d\n", i);
+		debug("[+] FVSuppression: Removing Segment: %d (Next ID: %d)\n", i, remove_item.Suivant);
 		
 		if(remove_item.Suivant != 0)
-			lseek(Fich->hdF, sizeof(remove_item.Suivant), SEEK_SET);
+			lseek(Fich->hdF, sizeof(remove_item) * remove_item.Suivant, SEEK_SET);
 	}
 	
 	/* Now: remove_item.Suivant is the last Data Segment */
@@ -330,10 +342,10 @@ int FVSuppression(int id, FICHIERVAR *Fich) {
 		
 	PremierLibre = newPremierLibre;
 	
-	debug("[+] Now, First Free ID: %d\n", PremierLibre);
+	debug("[+] FVSuppression: Now, First Free ID: %d\n", PremierLibre);
 	
 	/* Updating Index */
-	debug("[ ] Updating Index\n");
+	debug("[ ] FVSuppression: Updating Index\n");
 	indexPointer = Fich->Index + (id * 2);
 	
 	while(*indexPointer != 0) {
@@ -342,6 +354,8 @@ int FVSuppression(int id, FICHIERVAR *Fich) {
 		
 		indexPointer += 2;
 	}
+	
+	debug("[+] FVSuppression: Remove Segments Sucessfull\n");
 	
 	return 0;
 }

@@ -1,57 +1,70 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <signal.h>
 
 #include "AccFichVar.h"
 #include "Applic.h"
+#include "interface.h"
+#include "interface-link.h"
 
 FICHIERVAR F;
 
+void sig_handler(int signum) {
+	switch(signum) {
+		case SIGINT:
+		case SIGTERM:
+			printf("\n");
+			if(FVFermetureFichier(&F)) {
+				perror("[-] Core: Err. de fermeture du fichier");
+				exit(EXIT_FAILURE);
+			}
+			
+			exit(EXIT_SUCCESS);
+			
+		break;
+	}
+}
+
 int main() {
-	int rc;
+	menu_t *menu;
 	F.Taille = DATA_SIZE;
 	
-	int testc = 4, i;
-	char *testv[] = {"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-			"bbb",
-			"cccccccccccccccccccc",
-			"ddddddddddddddddddddddd"};
+	debug("[+] Core: Init Application\n");
 	
-	printf("Debut de l'Applic\n");
+	signal(SIGINT, sig_handler);
+	signal(SIGTERM, sig_handler);
 
 	if(FVOuvertureFichier("Data.dat", &F)) {
-		perror("[-] Err. d'ouverture du fichier");
+		perror("[-] Core: Err. d'ouverture du fichier");
 		exit(1);
 	}
 
-	debug("[ ] File Descriptiors: data: %d   index: %d\n", F.hdF, F.hdIndex);
-	FVAffiche(&F);
-
-	for(i = 0; i < testc; i++) {
-		rc = FVAjoutFichier(testv[i], &F);
-		
-		if (rc == -1) {
-			perror("[-] Insert failed");
-			exit(1);
-		}
-		
-		if(rc == 0)
-			debug("[-] No space left\n");
-
-		FVAffiche(&F);
-	}
+	debug("[ ] Core: File Descriptiors: data: %d   index: %d\n", F.hdF, F.hdIndex);
 	
-	if(FVConsultation(1, &F) == -1)
-		fprintf(stderr, "[-] ID not found\n");
+	/* Menu Code */
+	menu = menu_create("Application Unix - Menu Principal", 9);
+	menu_append(menu, "Faire une consultation", 1, interface_consultation, &F);
+	menu_append(menu, "Ajouter une entrée", 2, interface_ajout, &F);
+	menu_append(menu, "Supprimer une entrée", 3, interface_suppression, &F);
+	menu_append(menu, "Afficher la table de debuggage", 4, interface_affiche, &F);
+	menu_append(menu, "Quitter l'application", 9, NULL, NULL);
+	
+	while(menu_process(menu));
+	
+	menu_free(menu);
+	
+	goto endof;
 	
 	if(FVSuppression(1, &F) == -1)
-		fprintf(stderr, "[-] Cannot remove this ID\n");
+		fprintf(stderr, "[-] Core: Cannot remove this ID\n");
 	
 	FVAffiche(&F);
-
+	
+	endof:
 	if(FVFermetureFichier(&F)) {
-		perror("[-] Err. de fermeture du fichier");
-		exit(1);
+		perror("[-] Core: Err. de fermeture du fichier");
+		exit(EXIT_FAILURE);
 	}
 	
-	exit(0);
+	return 0;
 }
