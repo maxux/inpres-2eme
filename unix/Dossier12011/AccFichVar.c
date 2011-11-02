@@ -48,7 +48,7 @@ int FVOuvertureFichier(const char *NomFichier, FICHIERVAR *Fich) {
 			return -1;
 		
 		debug("[ ] FVOuvertureFichier: Writing Index file...\n");
-		if(write(Fich->hdIndex, Fich->Index, Fich->Taille * sizeof(int) * 2) != (signed)(Fich->Taille * sizeof(int) * 2))
+		if(write(Fich->hdIndex, Fich->Index, Fich->Taille * sizeof(index_element_t)) != (signed)(Fich->Taille * sizeof(index_element_t)))
 			return -1;
 
 		debug("[+] FVOuvertureFichier: Writing successful\n");
@@ -67,7 +67,7 @@ int FVOuvertureFichier(const char *NomFichier, FICHIERVAR *Fich) {
 	debug("[ ] FVOuvertureFichier: First free: %d\n", PremierLibre);
 	
 	debug("[ ] FVOuvertureFichier: Allocating index...\n");
-	if((Fich->Index = (int*)malloc(Fich->Taille * sizeof(int) * 2)) == NULL)
+	if((Fich->Index = (int*)malloc(Fich->Taille * sizeof(index_element_t))) == NULL)
 		return -1;
 
 	debug("[ ] FVOuvertureFichier: Opening Index...\n");
@@ -75,7 +75,7 @@ int FVOuvertureFichier(const char *NomFichier, FICHIERVAR *Fich) {
 		return -1;
 	
 	debug("[ ] FVOuvertureFichier: Loading index...\n");
-	if(read(Fich->hdIndex, Fich->Index, Fich->Taille * sizeof(int)) != (signed)(Fich->Taille * sizeof(int)))
+	if(read(Fich->hdIndex, Fich->Index, Fich->Taille * sizeof(index_element_t)) != (signed)(Fich->Taille * sizeof(index_element_t)))
 		return -1;
 	
 	debug("[+] FVOuvertureFichier: Reading files successfull\n");
