@@ -269,6 +269,7 @@ int FVConsultation(int id, FICHIERVAR *Fich) {
 	temp.Suivant = element.id;
 	
 	buffer = (char*) malloc(sizeof(char) * Fich->Taille * element.length + 1);
+	*buffer = NULL;
 	
 	/* Reading data */
 	for(i = 0; i < element.length; i++) {

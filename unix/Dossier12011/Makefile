@@ -1,4 +1,4 @@
-CC      = i686-pc-linux-gnu-gcc
+CC      = x86_64-pc-linux-gnu-gcc
 CFLAGS  = -W -Wall -O2 -pipe -g -D DEBUG -D COLOR
 LDFLAGS = 
 EXEC    = Applic
