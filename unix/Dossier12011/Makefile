@@ -1,4 +1,4 @@
-CC      = x86_64-pc-linux-gnu-gcc
+CC      = sparc-sun-solaris2.10-gcc
 CFLAGS  = -W -Wall -O2 -pipe -g -D DEBUG -D COLOR
 LDFLAGS = 
 EXEC    = Applic
