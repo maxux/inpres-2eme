@@ -31,9 +31,11 @@ int main() {
 	
 	debug("[+] Core: Init Application\n");
 	
+	/* Intercept SIG to Commit Index */
 	signal(SIGINT, sig_handler);
 	signal(SIGTERM, sig_handler);
 
+	/* Opening files */
 	if(FVOuvertureFichier("Data.dat", &F)) {
 		perror("[-] Core: Err. d'ouverture du fichier");
 		exit(1);
@@ -49,18 +51,11 @@ int main() {
 	menu_append(menu, "Afficher la table de debuggage", 4, interface_affiche, &F);
 	menu_append(menu, "Quitter l'application", 9, NULL, NULL);
 	
+	/* Menu Process */
 	while(menu_process(menu));
-	
 	menu_free(menu);
 	
-	goto endof;
-	
-	if(FVSuppression(1, &F) == -1)
-		fprintf(stderr, "[-] Core: Cannot remove this ID\n");
-	
-	FVAffiche(&F);
-	
-	endof:
+	/* Closing */
 	if(FVFermetureFichier(&F)) {
 		perror("[-] Core: Err. de fermeture du fichier");
 		exit(EXIT_FAILURE);
