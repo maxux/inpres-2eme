@@ -7,8 +7,6 @@
 
 #define     CHEMIN
 
-#include "fctTrace.h"
-
 #include "Commun.dat"
 #include "Donnee.dat"
 
@@ -26,13 +24,15 @@ int		CheminOptimum[55];
 int		TailleChemin = 0;
 int		rc;
 
+printf("HELLO WORLD\n");
+
 idQ = atoi(argv[1]);
 
 if ((rc = msgrcv(idQ,&MessageLu,sizeof(MessageLu) - sizeof(long),getpid(),0)) == -1)
-   { TraceErr(__LINE__,__FILE__,"Err. de msgrcv()");
+   { // TraceErr(__LINE__,__FILE__,"Err. de msgrcv()");
      exit(1);
    }
-Trace("\t(Chemin %d) MessageRecu",getpid());
+// Trace("\t(Chemin %d) MessageRecu",getpid());
 
 Recherche(MessageLu.Message[0],MessageLu.Message[1], 0,CheminSuivit, /* ????*/
                &(CheminOptimum[1]),&TailleChemin);
@@ -45,7 +45,7 @@ MESSAGE	*p = (MESSAGE *)malloc(Taille);
 p->lType = MessageLu.idProcess;
 memcpy(p->Message,CheminOptimum,sizeof(int) * (TailleChemin + 1));
 if (msgsnd(idQ,p,Taille - sizeof(long),0) == -1)
-   { TraceErr(__LINE__,__FILE__,"Err. de msgsnd()");
+   { // TraceErr(__LINE__,__FILE__,"Err. de msgsnd()");
      exit(1);
    }
 exit(0);
@@ -95,6 +95,6 @@ while (i < TailleChemin)
   { sprintf(szBuffer1,"%d ",aChemin[i++]);
     strcat(szBuffer,szBuffer1);
   }
-Trace("\t(Chemin %d): %s",getpid(),szBuffer);
+// Trace("\t(Chemin %d): %s",getpid(),szBuffer);
 return;
 }

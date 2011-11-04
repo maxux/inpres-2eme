@@ -1,14 +1,3 @@
-/****************************************************************************
-** Form implementation generated from reading ui file 'FenetrePlanVille.ui'
-**
-** Created: ven. oct. 14 12:32:16 2011
-**      by: The User Interface Compiler ($Id: qt/main.cpp   3.3.4   edited Nov 24 2003 $)
-**
-** WARNING! All changes made in this file will be lost!
-****************************************************************************/
-
-#include "FenetrePlanVille.h"
-
 #include <qvariant.h>
 #include <qlabel.h>
 #include <qlineedit.h>
@@ -19,21 +8,23 @@
 #include <qtooltip.h>
 #include <qwhatsthis.h>
 #include <qpainter.h>
+#include <qapplication.h>
 
 #include <sys/ipc.h>
 #include <sys/msg.h>
 
-extern char*		NomS;
-extern int		idQ;
+#include "FenetrePlanVille.hxx"
+
+char*	NomS;
+int idQ;
 
 #define CHEMIN
 
 #include "Commun.dat"
 #include "Donnee.dat"
-#include "fctTrace.h"
 
-MESSAGE		MessageEnvoie;
-MESSAGEMAX	MessageMax;
+message_t MessageEnvoie;
+message_max_t MessageMax;
 
 void TracePlan(QFrame* F);
 void TraceParcours(QFrame *,int);
@@ -46,7 +37,7 @@ void TraceChemin(QFrame* ,int,int[]);
  *  The dialog will by default be modeless, unless you set 'modal' to
  *  TRUE to construct a modal dialog.
  */
-FenetrePlanVille::FenetrePlanVille( QWidget* parent, const char* name, bool modal, WFlags fl )
+FenetrePlanVille::FenetrePlanVille( QWidget* parent, const char* name, bool modal, Qt::WFlags fl )
     : QDialog( parent, name, modal, fl )
 {
     if ( !name )
@@ -97,7 +88,7 @@ FenetrePlanVille::FenetrePlanVille( QWidget* parent, const char* name, bool moda
     NomVille->setGeometry( QRect( 110, 20, 58, 20 ) );
     languageChange();
     resize( QSize(711, 480).expandedTo(minimumSizeHint()) );
-    clearWState( WState_Polished );
+    // clearWState( WState_Polished );
 
     // signals and slots connections
     connect( ButtonSelection, SIGNAL( pressed() ), this, SLOT( Selection() ) );
@@ -134,13 +125,13 @@ lineDestination->setFocus();
 
 void FenetrePlanVille::Terminer()
 {
-Trace("Entree dans FenetrePlanVille::Terminer()" );
+// Trace("Entree dans FenetrePlanVille::Terminer()" );
 exit(0);
 }
 
 void FenetrePlanVille::Selection()
 {
-Trace("Entree dans FenetrePlanVille::Selection()");
+// Trace("Entree dans FenetrePlanVille::Selection()");
 int		Arrivee,rc;
 char		Buff[5];
 
@@ -148,41 +139,40 @@ strcpy(Buff,lineDestination->text());
 Arrivee = atoi(Buff);
 // en fait, rechercher le numero de la station.....
 
-TracePlan(framePlan);
+// TracePlan(framePlan);
 MessageEnvoie.lType = 1L;
-MessageEnvoie.Requete = RECHERCHE;
+MessageEnvoie.requete = RECHERCHE;
 MessageEnvoie.idProcess = getpid();
-MessageEnvoie.Message[0] = 1;
-MessageEnvoie.Message[1] = Arrivee;
+MessageEnvoie.message[0] = 1;
+MessageEnvoie.message[1] = Arrivee;
 
 if (msgsnd(idQ,&MessageEnvoie,sizeof(MessageEnvoie) - sizeof(long),0))
-   { TraceErr(__LINE__,__FILE__,"Err. de msgsnd()");
+   { // TraceErr(__LINE__,__FILE__,"Err. de msgsnd()");
      exit(1);
    }
 if ((rc = msgrcv(idQ,&MessageMax,200,getpid(),0)) == -1)
-   { TraceErr(__LINE__,__FILE__,"Err. de msgrcv()");
+   { // TraceErr(__LINE__,__FILE__,"Err. de msgrcv()");
      exit(1);
    }
 int TailleChemin = (rc - sizeof(pid_t) - sizeof(int))/sizeof(int);
-Trace("Taille du chemin : %d\n",TailleChemin);
-TraceChemin(framePlan,TailleChemin,MessageMax.Message);
+// Trace("Taille du chemin : %d\n",TailleChemin);
+TraceChemin(framePlan,TailleChemin,MessageMax.message);
 alarm(2);
 return;
 }
 
-void AffichePub(QTextEdit *T,const char* P)
-{
-T->setText(P);
+void AffichePub(QTextEdit *T,const char* P) {
+	T->setText(P);
 }
 
 void TracePlan(QFrame* F)
 {
-int     i = 0;
-QPainter        paint(F);
-while (i<6)
-   { TraceParcours(F,i);
-     i++;
-   }
+	int     i = 0;
+	QPainter        paint(F);
+	while (i<6)
+	   { TraceParcours(F,i);
+	     i++;
+	   }
 }
 
 void TraceParcours(QFrame* F,int Nb)
@@ -216,9 +206,20 @@ while (i < Nb)
    { paint.drawText(Donnee[Chemin[i]].L,
                     Donnee[Chemin[i]].C,
                     Donnee[Chemin[i]].Station);
-     Trace("%s",Donnee[Chemin[i]].Station);
+     // Trace("%s",Donnee[Chemin[i]].Station);
      i++;
    }
 
 return;
+}
+
+
+int main(int argc, char *argv[]) {
+	FenetrePlanVille *F1;
+	QApplication a( argc, argv );
+
+F1 = new FenetrePlanVille();
+    //a.setMainWidget(&F1 );
+F1->show();
+return a.exec();
 }
