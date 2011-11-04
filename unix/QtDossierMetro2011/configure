@@ -1,0 +1,13 @@
+#!/bin/bash
+set -e
+
+CONF="client control chemin"
+
+for i in $CONF; do
+	echo "-- Configuring $i"
+	cd $i && ./configure && cd ..
+done
+
+cp Makefile.in Makefile
+
+echo -e "\nAll done. Please make naow."
