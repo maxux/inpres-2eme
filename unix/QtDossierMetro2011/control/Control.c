@@ -145,9 +145,9 @@ int main(void) {
 			return 1;
 		}
 		
-		printf("New Message from PID: %d (Type: 0x%02x) :: %s\n", message.pid, message.requete, message.text);
+		printf("New Message from PID: %d (Type: 0x%02x) :: %s\n", message.pid, message.request, message.text);
 		
-		switch(message.requete) {
+		switch(message.request) {
 			case PROTO_LOGIN:
 				debug("New authentifcation: \n");
 				/* TODO: Check Message Validity... */

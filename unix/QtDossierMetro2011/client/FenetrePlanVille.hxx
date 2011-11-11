@@ -45,21 +45,18 @@
 
 	};
 	
-	#define MESSAGE_MAX_SIZE	20
+	#define PROTO_LOGIN	0x01
+	#define PROTO_LOGOUT	0x02
+	#define PROTO_SEARCH	0x03
+	#define PROTO_SHUTDOWN	0x04
 	
-	typedef struct {
+	#define MESSAGE_MAX_SIZE	512
+	
+	typedef struct message_t {
 		long lType;
-		pid_t idProcess;
-		int requete;
-		int message[2];
-	} message_t;
-
-	typedef struct {
-		long lType;
-		pid_t idProcess;
-		int requete;
-		int message[MESSAGE_MAX_SIZE];
+		pid_t pid;
+		int request;
+		char text[MESSAGE_MAX_SIZE];
 		
-	} message_max_t;
-
+	} message_t;
 #endif

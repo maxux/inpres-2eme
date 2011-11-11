@@ -6,7 +6,7 @@
 	typedef struct message_t {
 		long lType;
 		pid_t pid;
-		int requete;
+		int request;
 		char text[MESSAGE_MAX_SIZE];
 		
 	} message_t;
