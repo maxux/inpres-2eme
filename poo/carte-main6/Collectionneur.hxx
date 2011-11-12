@@ -30,6 +30,8 @@
 			friend std::ostream & operator << (ostream &flux, Collectionneur const &source);
 			friend std::istream & operator >> (istream &flux, Collectionneur &source);
 			
+			bool operator == (Collectionneur &rval);
+			
 			void Encode(istream &stream);
 			void Affiche(ostream &stream) const;
 		

@@ -57,6 +57,7 @@
 			int operator - (Carte &rval);
 			
 			bool operator < (Carte &rval);
+			bool operator == (Carte &rval);
 
 			Carte & operator ++ ();
 			Carte & operator ++ (int);

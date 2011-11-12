@@ -162,6 +162,12 @@ bool Carte::operator < (Carte &rval) {
 	return caract.getScore() < rval.caract.getScore();
 }
 
+bool Carte::operator == (Carte &rval) {
+	return ((strcmp(getNomCarte(), rval.getNomCarte()) == 0) &&	/* Compare Card Name */
+		(strcmp(getNomSerie(), rval.getNomSerie()) == 0) &&	/* Compare Card Serie */
+		(caract.getScore() == rval.caract.getScore()));		/* Compare Score */
+}
+
 Carte & Carte::operator ++ () {
 	caract.setScore(caract.getScore() + 5);
 	return *this;

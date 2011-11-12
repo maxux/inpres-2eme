@@ -90,3 +90,7 @@ istream & operator >> (istream &stream, Collectionneur &source) {
 	source.Encode(stream);
 	return stream;
 }
+
+bool Collectionneur::operator == (Collectionneur &rval) {
+	return (strcmp(getIdentification(), rval.getIdentification()) == 0);	/* Compare ID */
+}
