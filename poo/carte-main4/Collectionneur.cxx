@@ -13,7 +13,7 @@ Collectionneur::Collectionneur() {
 	_id = NULL;
 }
 
-Collectionneur::Collectionneur(Collectionneur &original) : AuthorisedPerson(original.getNom(), original.getPrenom(), original.getDateNais(), original.getNationalite(), original.getLogin()) {
+Collectionneur::Collectionneur(Collectionneur &original) : AuthorisedPerson(original) {
 	// setNomCollection(original.getNomCollection());
 	setNbCollection(original.getNbCollection());
 	_id = NULL;

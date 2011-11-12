@@ -10,7 +10,7 @@ AuthorisedPerson::AuthorisedPerson(const char *name, const char *surname, const 
 	setLogin(login);
 }
 
-AuthorisedPerson::AuthorisedPerson(AuthorisedPerson &original) : Person(original.getNom(), original.getPrenom(), original.getDateNais(), original.getNationalite()) {
+AuthorisedPerson::AuthorisedPerson(AuthorisedPerson &original) : Person(original) {
 	strcpy(_login, original.getLogin());
 }
 

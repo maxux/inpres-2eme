@@ -1,4 +1,4 @@
-CC      = x86_64-pc-linux-gnu-g++
+CC      = i686-pc-linux-gnu-g++
 CFLAGS  = -W -Wall -O2 -pipe -g
 LDFLAGS = 
 EXEC    = main4

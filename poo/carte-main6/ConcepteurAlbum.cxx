@@ -8,7 +8,7 @@ ConcepteurAlbum::ConcepteurAlbum() : AuthorisedPerson() {
 	_id = NULL;
 }
 
-ConcepteurAlbum::ConcepteurAlbum(ConcepteurAlbum &original) : AuthorisedPerson(original.getNom(), original.getPrenom(), original.getDateNais(), original.getNationalite(), original.getLogin()) {
+ConcepteurAlbum::ConcepteurAlbum(ConcepteurAlbum &original) : AuthorisedPerson(original) {
 	strcpy(_inc_name, original.getNomSociete());
 	
 	_id = new char[strlen(original.getIdentification()) + 1];
