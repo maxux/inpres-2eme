@@ -14,7 +14,7 @@ int main()
 
 	cout<<"VECTEUR TEMPLATE"<<endl<<endl;
 
-	/* cout<<"1. TEST AVEC UN VECTEUR D'ENTIERS"<<endl;
+	cout<<"1. TEST AVEC UN VECTEUR D'ENTIERS"<<endl;
 	Vecteur<int>ve1(5);
 	
 	cout<<"---------------Affichage des elements du vecteur----------------------------"<<endl;
@@ -71,7 +71,7 @@ int main()
 	cout<<"vecteur plein ?"<<endl;
 	cout<<ve1.full()<<endl;
 	attente();
-	cout<<endl; */
+	cout<<endl;
 
 	cout<<"2. TEST AVEC UN VECTEUR de CARTE"<<endl<<endl;
 	Vecteur<Carte>ve2(3);

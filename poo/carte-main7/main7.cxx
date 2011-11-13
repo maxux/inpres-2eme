@@ -1,9 +1,10 @@
 
 /* La partie 3. Test de la classe FichierCircuit n'a pas encore été adaptée avec le downcasting, il faut dans les méthodes de la classe FichierCircuit (save, list, ...) aller supprimer les lignes ds lesquelles on vient positionner la variable bool disque*/
 
-#include"FichierLog.h"
-#include"Carte.h"
-#include"FichierCarte.h"
+#include"FichierLog.hxx"
+#include"Carte.hxx"
+#include"FichierCarte.hxx"
+
 void attente();
 int main()
 {
