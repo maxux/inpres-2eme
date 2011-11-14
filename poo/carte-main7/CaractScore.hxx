@@ -29,12 +29,18 @@
 			int getScore();
 			
 			/* Overload Methods */
-			void Encode(istream &stream);
 			void Affiche(ostream &stream) const;
+			void Export(fstream &stream) const;
+			
+			void Encode(istream &stream);
+			void Import(fstream &stream);
+			
 
 			/* Overload */
 			friend std::ostream & operator << (ostream &flux, CaractScore const &caract);
+			friend std::fstream & operator << (fstream &stream, CaractScore const &carte);
 			friend std::istream & operator >> (istream &flux, CaractScore &caract);
+			friend std::fstream & operator >> (fstream &stream, CaractScore &caract);
 			
 			CaractScore & operator = (CaractScore &rval);
 			

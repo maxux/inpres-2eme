@@ -96,6 +96,40 @@ bool Carte::IdentNomCaract(Carte &c) {
 }
 
 /* Overload */
+void Carte::Export(fstream &stream) const {
+	if(_id > 0)
+		stream << _id << endl;
+	else stream << "<unknown>" << endl;
+		
+	if(*_name)
+		stream << _name << endl;	
+	else stream << "<unknown>" << endl;
+	
+	if(_serie)
+		stream << _serie << endl;
+	else stream << "<unknown>" << endl;
+	
+	stream << caract;
+}
+
+fstream & operator << (fstream &stream, Carte const &carte) {
+	carte.Export(stream);
+	return stream;
+}
+
+void Carte::Import(fstream &stream) {
+	/* Same order as Export */
+	stream >> _id;	
+	stream >> _name;	
+	stream >> _serie;	
+	stream >> caract;
+}
+
+fstream & operator >> (fstream &stream, Carte &carte) {
+	carte.Import(stream);
+	return stream;
+}
+
 void Carte::Affiche(ostream &stream) const {
 	if(_id > 0)
 		stream << "ID   : " << _id << endl;

@@ -54,6 +54,31 @@ int CaractScore::getScore() {
 }
 
 /* Overload */
+void CaractScore::Export(fstream &stream) const {
+	if(*_name)
+		stream << _name << endl;	
+	else stream << "<unknown>" << endl;
+	
+	if(_score)
+		stream << _score << endl;
+	else stream << "<unknown>" << endl;
+}
+
+fstream & operator << (fstream &stream, CaractScore const &carte) {
+	carte.Export(stream);
+	return stream;
+}
+
+void CaractScore::Import(fstream &stream) {
+	stream >> _name;
+	stream >> _score;
+}
+
+fstream & operator >> (fstream &stream, CaractScore &carte) {
+	carte.Import(stream);
+	return stream;
+}
+
 void CaractScore::Affiche(ostream &stream) const {
 	if(*_name)
 		stream << "Nom  : " << _name << endl;	
@@ -68,7 +93,6 @@ ostream & operator << (ostream &stream, CaractScore const &caract) {
 	caract.Affiche(stream);
 	return stream;
 }
-
 
 void CaractScore::Encode(istream &stream) {
 	int temp;

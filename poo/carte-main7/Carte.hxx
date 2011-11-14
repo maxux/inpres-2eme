@@ -42,13 +42,18 @@
 			/* Display */
 			void Affiche() const;
 			void Affiche(std::ostream &stream) const;
+			void Export(std::fstream &stream) const;
 			
 			/* Encoding */
 			void Encode(std::istream &stream);
+			void Import(std::fstream &stream);
+			
 			
 			/* Overload */
+			friend std::fstream & operator << (std::fstream &flux, Carte const &carte);
 			friend std::ostream & operator << (std::ostream &flux, Carte const &carte);
 			friend std::istream & operator >> (std::istream &flux, Carte &carte);
+			friend std::fstream & operator >> (std::fstream &flux, Carte &carte);
 			
 			Carte & operator = (Carte &rval);
 			

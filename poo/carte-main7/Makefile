@@ -18,4 +18,4 @@ clean:
 	rm -fv *.o
 
 mrproper: clean
-	rm -fv $(EXEC)
+	rm -fv $(EXEC) Essai.txt FanaDeCollections.log Cartes.txt
