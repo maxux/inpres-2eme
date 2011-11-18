@@ -15,6 +15,7 @@
 
 #include <sys/ipc.h>
 #include <sys/msg.h>
+#include <sys/shm.h>
 
 #include "FenetrePlanVille.hxx"
 
@@ -41,6 +42,10 @@ void TraceChemin(QFrame *, int, int[]);
 FenetrePlanVille::FenetrePlanVille(QWidget* parent, const char *name, bool modal, Qt::WFlags fl) : QDialog(parent, name, modal, fl) {
 	if(!name)
 		setName("FenetrePlanVille");
+	
+	/* Disable custom draw */
+	draw.need_repaint = false;
+	draw.todo 	  = 0;
 
 	LabelArrivee = new QLabel(this, "LabelArrivee");
 	LabelArrivee->setEnabled(TRUE);
@@ -93,8 +98,9 @@ FenetrePlanVille::FenetrePlanVille(QWidget* parent, const char *name, bool modal
 
 	// signals and slots connections
 	connect(ButtonSelection, SIGNAL(pressed()), this, SLOT(Selection()));
-	connect(ButtonTerminer, SIGNAL(pressed()), this, SLOT(Terminer()));
 	connect(lineDestination, SIGNAL(returnPressed()), this, SLOT(Selection()));
+	
+	connect(ButtonTerminer, SIGNAL(pressed()), this, SLOT(Terminer()));
 }
 
 /*
@@ -166,7 +172,11 @@ void FenetrePlanVille::Selection() {
 	int TailleChemin = (rc - sizeof(pid_t) - sizeof(int)) / sizeof(int);
 	
 	a = 1;
-	TraceChemin(framePlan, TailleChemin, &a);
+	draw.need_repaint = true;
+	draw.todo = DRAW_PATH;
+	// TraceChemin(framePlan, TailleChemin, &a);
+	repaint();
+	
 	alarm(2);
 	
 	return;
@@ -176,20 +186,53 @@ void FenetrePlanVille::AffichePub(QTextEdit *T, const char* P) {
 	T->setText(P);
 }
 
-void FenetrePlanVille::TracePlan(QFrame* F) {
-	int i = 0;
-	QPainter paint(F);
+void FenetrePlanVille::paintEvent(QPaintEvent *event) {
+	QPainter paint(this);
+	int i, tmp[3] = {1, 2, 3};
 	
-	while(i<6) {
-		printf("Tracing %d\n", i);
-		TraceParcours(F, i);
-		i++;
+	printf("Drawing...\n");
+	if(draw.need_repaint) {
+		printf("NEED REPAINT\n");
+		
+		
+		switch(draw.todo) {
+			case DRAW_PLAN:
+				for(i = 0; i < 6; i++)
+					TraceParcours(i, paint);
+			break;
+			
+			case DRAW_PATH:
+				TraceChemin(4, tmp, paint);
+			break;
+		}
+		
+		draw.need_repaint = false;
 	}
+	
+	// paint.setWindow(framePlan->frameRect());
+	paint.drawText(10, 10, "Hello World");
 }
 
-void FenetrePlanVille::TraceParcours(QFrame* F, int Nb) {
-	QPainter paint(F);
+void FenetrePlanVille::TracePlan(QFrame* F) {
+	// int i = 0;
+	// QPainter paint(F);
+	// repaint();
+	
+	draw.need_repaint = true;
+	draw.todo = DRAW_PLAN;
+	repaint();
+		
+		
+		// TraceParcours(F, i);
+	//	i++;
+	// }
+}
+
+void FenetrePlanVille::TraceParcours(int Nb, QPainter &paint) {
+	// QPainter paint(F);
 	int i = 0;
+	
+	printf("UPDATING FROM %d\n", Nb);
 	
 	paint.setPen(LigneMetro[Nb].Couleur);
 	
@@ -207,8 +250,7 @@ void FenetrePlanVille::TraceParcours(QFrame* F, int Nb) {
 	}
 }
 
-void FenetrePlanVille::TraceChemin(QFrame* F,int Nb,int Chemin[]) {
-	QPainter paint(F);
+void FenetrePlanVille::TraceChemin(int Nb, int Chemin[], QPainter &paint) {
 	int i = 0;
 	
 	paint.setPen(Qt::red);
@@ -239,8 +281,14 @@ void sig_handler(int signum) {
 }
 
 int main(int argc, char *argv[]) {
-	message_t message;
+	message_t message;	/* Message Queue */
+	key_t skey;		/* Shared Memory Segment ID */
+	int skey_id;		/* Shared Memory key */
+	char *shm;		/* Shared Memory Segment */
+	
 	QApplication a(argc, argv);
+	
+	printf("Loading...\n");
 	
 	/* Intercept ALARM */
 	signal(SIGALRM, sig_handler);
@@ -251,7 +299,7 @@ int main(int argc, char *argv[]) {
 	/* Incercept SIGUSR2: Sys Admin Message */
 	signal(SIGUSR2, sig_handler);
 	
-	int key_id = msgget(1342, IPC_CREAT | 0666);
+	int key_id = msgget(MESSAGE_KEY_ID, IPC_CREAT | 0666);
 	
 	message.lType = 1L;
 	message.request = PROTO_LOGIN;
@@ -266,14 +314,27 @@ int main(int argc, char *argv[]) {
 		exit(1);
 	}
 	
+	/* Attaching Shared Memory Segment */
+	skey = SHARED_MEMORY_ID;
+	if((skey_id = shmget(skey, SHARED_MEMORY_SIZE, 0666)) < 0) {
+		perror("shmget");
+		// exit(1);
+	}
+	
+	if((shm = (char *) shmat(skey_id, NULL, 0)) == (char *) -1) {
+		perror("shmat");
+		// exit(1);
+	}
+	
+	printf("DEBUG: <%s>\n", shm);
 
 	F1 = new FenetrePlanVille();
 	// a.setMainWidget(&F1);
 	F1->show();
 	
-	printf("wait...\n");
-	alarm(2);
-	// F1->TracePlan(F1->framePlan);
+	/* printf("wait...\n");
+	alarm(2); */
+	F1->TracePlan(F1->framePlan);
 	
 	printf("Hello World\n");
 	

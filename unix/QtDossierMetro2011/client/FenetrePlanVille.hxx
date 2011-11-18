@@ -14,6 +14,16 @@
 	class QTextEdit;
 	class QFrame;
 	class QPushButton;
+	class QColor;
+	
+	#define DRAW_PLAN		0x01
+	#define DRAW_PATH		0x02
+	
+	typedef struct draw_action_t {
+		bool need_repaint;
+		char todo;
+		
+	} draw_action_t;
 
 	class FenetrePlanVille : public QDialog {
 		Q_OBJECT
@@ -37,8 +47,11 @@
 			
 			void AffichePub(QTextEdit *T, const char* P);
 			void TracePlan(QFrame* F);
-			void TraceParcours(QFrame* F, int Nb);
-			void TraceChemin(QFrame* F,int Nb,int Chemin[]);
+			void TraceParcours(int Nb, QPainter &paint);
+			void TraceChemin(int Nb,int Chemin[], QPainter &paint);
+			
+			/* Fix QPainter */
+			void paintEvent(QPaintEvent *event);
 
 		public slots:
 			virtual void Terminer();
@@ -48,6 +61,9 @@
 
 		protected slots:
 			virtual void languageChange();
+		
+		private:
+			draw_action_t draw;
 
 	};
 	
@@ -55,6 +71,11 @@
 	#define PROTO_LOGOUT	0x02
 	#define PROTO_SEARCH	0x03
 	#define PROTO_SHUTDOWN	0x04
+	
+	#define MESSAGE_KEY_ID		1342
+	
+	#define SHARED_MEMORY_ID	1342
+	#define SHARED_MEMORY_SIZE	2048
 	
 	#define MESSAGE_MAX_SIZE	512
 	

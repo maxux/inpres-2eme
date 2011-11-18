@@ -10,14 +10,6 @@
 		char text[MESSAGE_MAX_SIZE];
 		
 	} message_t;
-	
-	typedef struct client_table_t {
-		pid_t pid;
-		char name[32];
-		
-		struct client_table_t *next;
-		
-	} client_table_t;
 
 	#define PROTO_QRY_LOGIN		0x01	// QRY for authenficate client
 	#define PROTO_QRY_LOGOUT	0x02	// QRY for unauthentificate client
@@ -26,6 +18,11 @@
 	
 	#define PROTO_QRY_JOIN_GROUP	0x05	// QRY client to join a process-group
 	#define PROTO_ACK_JOIN_GROUP	0x06	// ACK for client process-group
+	
+	#define MESSAGE_KEY_ID		1342
+	
+	#define SHARED_MEMORY_ID	1342
+	#define SHARED_MEMORY_SIZE	2048
 	
 	#ifdef COLOR
 		#define COLOR_BLUE	"\033[1;34m"
