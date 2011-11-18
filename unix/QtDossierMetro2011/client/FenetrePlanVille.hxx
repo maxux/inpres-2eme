@@ -3,6 +3,7 @@
 
 	#include <qvariant.h>
 	#include <qdialog.h>
+	#include <qpainter.h>
 
 	class QVBoxLayout;
 	class QHBoxLayout;
@@ -33,6 +34,11 @@
 			QPushButton* ButtonTerminer;
 			QLabel* LabelNomVille;
 			QLabel* NomVille;
+			
+			void AffichePub(QTextEdit *T, const char* P);
+			void TracePlan(QFrame* F);
+			void TraceParcours(QFrame* F, int Nb);
+			void TraceChemin(QFrame* F,int Nb,int Chemin[]);
 
 		public slots:
 			virtual void Terminer();

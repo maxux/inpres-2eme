@@ -4,7 +4,7 @@
 PROJECT_TYPE="c++"
 
 # Setting project name
-PROJECT_NAME="Chemin"
+PROJECT_NAME="chemin"
 
 DEFINES="-DCOLOR -DQT_NO_DEBUG -DQT_QT3SUPPORT_LIB -DQT3_SUPPORT -DQT_GUI_LIB -DQT_CORE_LIB -DQT_SHARED"
 CFLAGS="-W -Wall -O2 -pipe -g -I/usr/share/qt4/mkspecs/linux-g++ -I. -I/usr/include/qt4/QtCore -I/usr/include/qt4/QtGui -I/usr/include/qt4"

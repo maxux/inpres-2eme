@@ -19,10 +19,13 @@
 		
 	} client_table_t;
 
-	#define PROTO_LOGIN	0x01
-	#define PROTO_LOGOUT	0x02
-	#define PROTO_SEARCH	0x03
-	#define PROTO_SHUTDOWN	0x04
+	#define PROTO_QRY_LOGIN		0x01	// QRY for authenficate client
+	#define PROTO_QRY_LOGOUT	0x02	// QRY for unauthentificate client
+	#define PROTO_QRY_SEARCH	0x03	// QRY for path finding
+	#define PROTO_QRY_SHUTDOWN	0x04	// QRY for daemon's shutdown
+	
+	#define PROTO_QRY_JOIN_GROUP	0x05	// QRY client to join a process-group
+	#define PROTO_ACK_JOIN_GROUP	0x06	// ACK for client process-group
 	
 	#ifdef COLOR
 		#define COLOR_BLUE	"\033[1;34m"

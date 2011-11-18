@@ -134,8 +134,8 @@ int main(void) {
 		return 1;
 	}
 		
-	/* Init Group Session */
-	// leader_pid = 0;
+	/* Init Process Group */
+	debug("Control PID: %d\n", getpid());
 	
 	while(1) {
 		printf("Waiting Messages...\n");
@@ -148,7 +148,7 @@ int main(void) {
 		printf("New Message from PID: %d (Type: 0x%02x) :: %s\n", message.pid, message.request, message.text);
 		
 		switch(message.request) {
-			case PROTO_LOGIN:
+			case PROTO_QRY_LOGIN:
 				debug("New authentifcation: \n");
 				/* TODO: Check Message Validity... */
 				
@@ -173,7 +173,7 @@ int main(void) {
 					perror("[-] setpgid"); */
 			break;
 			
-			case PROTO_LOGOUT:
+			case PROTO_QRY_LOGOUT:
 				debug("User logout: \n");
 				/* TODO: Check validity */
 				
@@ -189,12 +189,12 @@ int main(void) {
 				stack_sending_signal(clients, SIGUSR1);
 			break;
 			
-			case PROTO_SEARCH:
+			case PROTO_QRY_SEARCH:
 				debug("New PathFinding...\n");
 				/* Fucking fork(); */
 			break;
 			
-			case PROTO_SHUTDOWN:
+			case PROTO_QRY_SHUTDOWN:
 				debug("Shutting down...\n");
 				return 2;
 			break;

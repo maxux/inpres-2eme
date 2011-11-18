@@ -4,7 +4,7 @@
 PROJECT_TYPE="c"
 
 # Setting project name
-PROJECT_NAME="Control"
+PROJECT_NAME="control"
 
 DEFINES="-D COLOR -D DEBUG"
 CFLAGS="-W -Wall -O2 -pipe -g"

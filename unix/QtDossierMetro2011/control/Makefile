@@ -2,7 +2,7 @@ CC      = x86_64-pc-linux-gnu-gcc
 DEFINES = -D COLOR -D DEBUG
 CFLAGS  = -W -Wall -O2 -pipe -g
 LDFLAGS = 
-EXEC    = Control
+EXEC    = control
 CLEANE  = 
 
 SRC=$(wildcard *.c)

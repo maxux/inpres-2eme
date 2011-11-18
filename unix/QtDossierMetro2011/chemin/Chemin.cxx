@@ -23,27 +23,34 @@ int main(int argc, char*argv[]) {
 	int TailleChemin = 0;
 	int rc;
 
-	printf("HELLO WORLD\n");
+	printf("Debug 1\n");
 
-	idQ = atoi(argv[1]);
+	// idQ = atoi(argv[1]);
+	idQ = 1200;
 
-	if((rc = msgrcv(idQ,&MessageLu,sizeof(MessageLu) - sizeof(long),getpid(),0)) == -1) {
-		// TraceErr(__LINE__,__FILE__,"Err. de msgrcv()");
+	printf("Debug 1\n");
+	/* if((rc = msgrcv(idQ, &MessageLu,sizeof(MessageLu) - sizeof(long),getpid(),0)) == -1) {
+		fprintf(stderr, "%d %s %s\n", __LINE__,__FILE__, "Err. de msgrcv()");
 		exit(1);
-	}
+	} */
 	// Trace("\t(Chemin %d) MessageRecu",getpid());
 
-	Recherche(MessageLu.Message[0], MessageLu.Message[1], 0, CheminSuivit, &(CheminOptimum[1]), &TailleChemin);
+	printf("Debug 1\n");
+	// Recherche(MessageLu.Message[0], MessageLu.Message[1], 0, CheminSuivit, &(CheminOptimum[1]), &TailleChemin);
+	Recherche(2, 5, 0, CheminSuivit, &(CheminOptimum[1]), &TailleChemin);
 
+	printf("Debug 1\n");
 	CheminOptimum[0] = MessageLu.Message[0];
-	AffChemin(CheminOptimum,TailleChemin + 1);
+	AffChemin(CheminOptimum, TailleChemin + 1);
 
 	int Taille = sizeof(long) + sizeof(int) + sizeof(pid_t) + sizeof(int) * (TailleChemin + 1);
 	MESSAGE	*p = (MESSAGE *) malloc(Taille);
 	
+	printf("Debug 1\n");
 	p->lType = MessageLu.idProcess;
 	memcpy(p->Message,CheminOptimum,sizeof(int) * (TailleChemin + 1));
 	
+	printf("Sending\n");
 	if(msgsnd(idQ,p,Taille - sizeof(long),0) == -1) {
 		// TraceErr(__LINE__,__FILE__,"Err. de msgsnd()");
 		exit(1);
@@ -98,6 +105,6 @@ void AffChemin(int aChemin[],int TailleChemin) {
 		strcat(szBuffer, szBuffer1);
 	}
 	
-	// Trace("\t(Chemin %d): %s",getpid(),szBuffer);
+	fprintf(stderr, "(Chemin %d): %s", getpid(), szBuffer);
 	return;
 }

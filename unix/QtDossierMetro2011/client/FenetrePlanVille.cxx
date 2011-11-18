@@ -11,6 +11,7 @@
 #include <qapplication.h>
 
 #include <stdio.h>
+#include <signal.h>
 
 #include <sys/ipc.h>
 #include <sys/msg.h>
@@ -132,7 +133,7 @@ void FenetrePlanVille::Selection() {
 	int Arrivee, rc, a;
 	char Buff[5];
 
-	strcpy(Buff, lineDestination->text());
+	/* strcpy(Buff, lineDestination->text());
 	Arrivee = atoi(Buff);
 	// en fait, rechercher le numero de la station.....
 
@@ -140,8 +141,8 @@ void FenetrePlanVille::Selection() {
 	MessageEnvoie.lType = 1L;
 	MessageEnvoie.request = PROTO_SEARCH;
 	MessageEnvoie.pid = getpid();
-	/* MessageEnvoie.message[0] = 1;
-	MessageEnvoie.message[1] = Arrivee; */
+	// MessageEnvoie.message[0] = 1;
+	// MessageEnvoie.message[1] = Arrivee;
 	strcpy(MessageEnvoie.text, "Testing Message");
 	
 	int key_id = msgget(1342, IPC_CREAT | 0666);
@@ -160,33 +161,39 @@ void FenetrePlanVille::Selection() {
 	// Trace("Taille du chemin : %d\n",TailleChemin);
 	// TraceChemin(framePlan, TailleChemin, MessageEnvoie.text);
 	a = 1;
+	*/
+	
+	int TailleChemin = (rc - sizeof(pid_t) - sizeof(int)) / sizeof(int);
+	
+	a = 1;
 	TraceChemin(framePlan, TailleChemin, &a);
 	alarm(2);
 	
 	return;
 }
 
-void AffichePub(QTextEdit *T, const char* P) {
+void FenetrePlanVille::AffichePub(QTextEdit *T, const char* P) {
 	T->setText(P);
 }
 
-void TracePlan(QFrame* F) {
+void FenetrePlanVille::TracePlan(QFrame* F) {
 	int i = 0;
 	QPainter paint(F);
 	
 	while(i<6) {
+		printf("Tracing %d\n", i);
 		TraceParcours(F, i);
 		i++;
 	}
 }
 
-void TraceParcours(QFrame* F, int Nb) {
+void FenetrePlanVille::TraceParcours(QFrame* F, int Nb) {
 	QPainter paint(F);
 	int i = 0;
 	
 	paint.setPen(LigneMetro[Nb].Couleur);
 	
-	while(LigneMetro[Nb].Position[i+1].N) {
+	while(LigneMetro[Nb].Position[i + 1].N) {
 		paint.drawLine(LigneMetro[Nb].Position[i].L, LigneMetro[Nb].Position[i].C, LigneMetro[Nb].Position[i+1].L, LigneMetro[Nb].Position[i+1].C);
 		i++;
 	}
@@ -195,12 +202,12 @@ void TraceParcours(QFrame* F, int Nb) {
 	
 	i = 1;
 	while(i <= 34) {
-		paint.drawText(Donnee[i].L,Donnee[i].C,Donnee[i].Station);
+		paint.drawText(Donnee[i].L, Donnee[i].C, Donnee[i].Station);
 		i++;
 	}
 }
 
-void TraceChemin(QFrame* F,int Nb,int Chemin[]) {
+void FenetrePlanVille::TraceChemin(QFrame* F,int Nb,int Chemin[]) {
 	QPainter paint(F);
 	int i = 0;
 	
@@ -213,11 +220,36 @@ void TraceChemin(QFrame* F,int Nb,int Chemin[]) {
 	}
 }
 
-int main(int argc, char *argv[]) {
-	FenetrePlanVille *F1;
-	message_t message;
+FenetrePlanVille *F1;
+
+void sig_handler(int signum) {
+	switch(signum) {
+		/* SIGUSR1: New ads */
+		case SIGUSR1:
+			printf("SIGUSR1 intercepted\n");
+			F1->AffichePub(F1->textInformation, "New ads incomming...");
+		break;
+		
+		case SIGUSR2:
+			printf("SIGUSR2 intercepted\n");
+		break;
+	}
 	
+	// F1->TracePlan(F1->framePlan);
+}
+
+int main(int argc, char *argv[]) {
+	message_t message;
 	QApplication a(argc, argv);
+	
+	/* Intercept ALARM */
+	signal(SIGALRM, sig_handler);
+	
+	/* Intercept SIGUSR1: Advertissment */
+	signal(SIGUSR1, sig_handler);
+	
+	/* Incercept SIGUSR2: Sys Admin Message */
+	signal(SIGUSR2, sig_handler);
 	
 	int key_id = msgget(1342, IPC_CREAT | 0666);
 	
@@ -236,8 +268,14 @@ int main(int argc, char *argv[]) {
 	
 
 	F1 = new FenetrePlanVille();
-	//a.setMainWidget(&F1 );
+	// a.setMainWidget(&F1);
 	F1->show();
+	
+	printf("wait...\n");
+	alarm(2);
+	// F1->TracePlan(F1->framePlan);
+	
+	printf("Hello World\n");
 	
 	return a.exec();
 }
