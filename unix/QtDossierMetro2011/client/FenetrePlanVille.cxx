@@ -19,14 +19,13 @@
 
 #include "FenetrePlanVille.hxx"
 
-char *NomS;
-
 #define CHEMIN
 
 #include "Commun.dat"
 #include "Donnee.dat"
 
 message_t MessageEnvoie;
+global_t sys;
 
 void TracePlan(QFrame* F);
 void TraceParcours(QFrame *, int);
@@ -124,14 +123,30 @@ void FenetrePlanVille::languageChange() {
 	ButtonSelection->setText(tr("Selection"));
 	ButtonTerminer->setText(tr("Terminer"));
 	LabelNomVille->setText(tr("Station"));
-	NomVille->setText(tr(NomS));
+	// NomVille->setText(tr(NomS));
 
 	lineDestination->setFocus();
 }
 
 void FenetrePlanVille::Terminer() {
-	// Trace("Entree dans FenetrePlanVille::Terminer()" );
+	send_message(PROTO_QRY_LOGOUT, (void*) "kthxbye");
 	exit(0);
+}
+
+int send_message(int request, void *data) {
+	message_t message;	/* Message Queue */
+	
+	message.lType   = 1L;
+	message.request = request;
+	message.pid     = getpid();
+	strcpy(message.text, (char*) data);
+	
+	if(msgsnd(*(sys.mkey_id), &message, sizeof(message) - sizeof(long), 0)) {
+		perror("msgsnd");
+		return 0;
+	}
+	
+	return 1;
 }
 
 void FenetrePlanVille::Selection() {
@@ -188,9 +203,8 @@ void FenetrePlanVille::AffichePub(QTextEdit *T, const char* P) {
 
 void FenetrePlanVille::paintEvent(QPaintEvent *event) {
 	QPainter paint(this);
-	int i, tmp[3] = {1, 2, 3};
+	int i, tmp[] = {1, 3, 2, 4, 5};
 	
-	printf("Drawing...\n");
 	if(draw.need_repaint) {
 		printf("NEED REPAINT\n");
 		
@@ -202,6 +216,9 @@ void FenetrePlanVille::paintEvent(QPaintEvent *event) {
 			break;
 			
 			case DRAW_PATH:
+				for(i = 0; i < 6; i++)
+					TraceParcours(i, paint);
+					
 				TraceChemin(4, tmp, paint);
 			break;
 		}
@@ -210,7 +227,6 @@ void FenetrePlanVille::paintEvent(QPaintEvent *event) {
 	}
 	
 	// paint.setWindow(framePlan->frameRect());
-	paint.drawText(10, 10, "Hello World");
 }
 
 void FenetrePlanVille::TracePlan(QFrame* F) {
@@ -237,7 +253,7 @@ void FenetrePlanVille::TraceParcours(int Nb, QPainter &paint) {
 	paint.setPen(LigneMetro[Nb].Couleur);
 	
 	while(LigneMetro[Nb].Position[i + 1].N) {
-		paint.drawLine(LigneMetro[Nb].Position[i].L, LigneMetro[Nb].Position[i].C, LigneMetro[Nb].Position[i+1].L, LigneMetro[Nb].Position[i+1].C);
+		paint.drawLine(LigneMetro[Nb].Position[i].L + 40, LigneMetro[Nb].Position[i].C + 50, LigneMetro[Nb].Position[i+1].L + 40, LigneMetro[Nb].Position[i+1].C + 50);
 		i++;
 	}
 	
@@ -245,96 +261,141 @@ void FenetrePlanVille::TraceParcours(int Nb, QPainter &paint) {
 	
 	i = 1;
 	while(i <= 34) {
-		paint.drawText(Donnee[i].L, Donnee[i].C, Donnee[i].Station);
+		// paint.drawText(Donnee[i].L + 40, Donnee[i].C + 50, Donnee[i].Station);
 		i++;
 	}
 }
 
 void FenetrePlanVille::TraceChemin(int Nb, int Chemin[], QPainter &paint) {
 	int i = 0;
+	QPen pen;
 	
-	paint.setPen(Qt::red);
+	pen.setWidth(5);
+	pen.setColor(Qt::red);
+	
+	paint.setPen(pen);
 	
 	while(i < Nb) {
-		paint.drawText(Donnee[Chemin[i]].L, Donnee[Chemin[i]].C, Donnee[Chemin[i]].Station);
+		paint.drawLine(LigneMetro[Nb].Position[i].L + 40, LigneMetro[Nb].Position[i].C + 50, LigneMetro[Nb].Position[i+1].L + 40, LigneMetro[Nb].Position[i+1].C + 50);
+		// paint.drawText(Donnee[Chemin[i]].L + 40, Donnee[Chemin[i]].C + 50, Donnee[Chemin[i]].Station);
 		// Trace("%s",Donnee[Chemin[i]].Station);
 		i++;
 	}
 }
-
-FenetrePlanVille *F1;
 
 void sig_handler(int signum) {
 	switch(signum) {
 		/* SIGUSR1: New ads */
 		case SIGUSR1:
 			printf("SIGUSR1 intercepted\n");
-			F1->AffichePub(F1->textInformation, "New ads incomming...");
+			sys.window->AffichePub(sys.window->textInformation, "New ads incomming...");
 		break;
 		
 		case SIGUSR2:
 			printf("SIGUSR2 intercepted\n");
+		break;
+		
+		case SIGINT:
+			sys.window->Terminer();
 		break;
 	}
 	
 	// F1->TracePlan(F1->framePlan);
 }
 
+int signal_intercept(int signal, void (*function)(int)) {
+	struct sigaction sig;
+	int ret;
+	
+	/* Building empty signal set */
+	sigemptyset(&sig.sa_mask);
+	
+	/* Building Signal */
+	sig.sa_handler	 = function;
+	sig.sa_flags	 = 0;
+	/* sig.sa_sigaction = NULL; */
+	
+	/* Installing Signal */
+	if((ret = sigaction(signal, &sig, NULL)) == -1)
+		perror("sigaction");
+	
+	return ret;
+}
+
 int main(int argc, char *argv[]) {
+	FenetrePlanVille *F1;
 	message_t message;	/* Message Queue */
+	int mkey_id;		/* Message Queue ID */
 	key_t skey;		/* Shared Memory Segment ID */
 	int skey_id;		/* Shared Memory key */
 	char *shm;		/* Shared Memory Segment */
+	
+	int rc;
 	
 	QApplication a(argc, argv);
 	
 	printf("Loading...\n");
 	
+	/* Affecting Global Settings */
+	sys.mkey_id = &mkey_id;
+	
 	/* Intercept ALARM */
-	signal(SIGALRM, sig_handler);
+	signal_intercept(SIGALRM, sig_handler);
 	
 	/* Intercept SIGUSR1: Advertissment */
-	signal(SIGUSR1, sig_handler);
+	signal_intercept(SIGUSR1, sig_handler);
 	
 	/* Incercept SIGUSR2: Sys Admin Message */
-	signal(SIGUSR2, sig_handler);
+	signal_intercept(SIGUSR2, sig_handler);
 	
-	int key_id = msgget(MESSAGE_KEY_ID, IPC_CREAT | 0666);
+	/* Interrupt SIGINT: Closing */
+	signal_intercept(SIGINT, sig_handler);
 	
-	message.lType = 1L;
-	message.request = PROTO_LOGIN;
-	message.pid = getpid();
-	/* MessageEnvoie.message[0] = 1;
-	MessageEnvoie.message[1] = Arrivee; */
-	strcpy(message.text, "Hello World");
+	mkey_id = msgget(MESSAGE_KEY_ID, IPC_CREAT | 0666);
 	
-	
-	if(msgsnd(key_id, &message, sizeof(message) - sizeof(long), 0)) {
-		fprintf(stderr, "Err. de msgsnd: %d %s", __LINE__, __FILE__);
-		exit(1);
+	if(!send_message(PROTO_QRY_LOGIN, (void*) "Hello world")) {
+		debug("Cannot send message to server\n");
+		return 1;
 	}
 	
 	/* Attaching Shared Memory Segment */
 	skey = SHARED_MEMORY_ID;
 	if((skey_id = shmget(skey, SHARED_MEMORY_SIZE, 0666)) < 0) {
 		perror("shmget");
-		// exit(1);
+		return 1;
 	}
 	
 	if((shm = (char *) shmat(skey_id, NULL, 0)) == (char *) -1) {
 		perror("shmat");
-		// exit(1);
+		return 1;
 	}
 	
 	printf("DEBUG: <%s>\n", shm);
 
+	/* Launching GUI */
 	F1 = new FenetrePlanVille();
+	
+	/* Saving Window's Address */
+	sys.window = F1;
+	
 	// a.setMainWidget(&F1);
 	F1->show();
 	
 	/* printf("wait...\n");
 	alarm(2); */
-	F1->TracePlan(F1->framePlan);
+	if(!send_message(PROTO_QRY_PATHLIST, (void*) "Want Path List"))
+		debugc("Cannot downloading map\n");
+	
+	printf("Waiting path list\n");
+	if((rc = msgrcv(mkey_id, &message, sizeof(message), getpid(), 0)) == -1) {
+		fprintf(stderr, "Err. de msgrcv: %d %s", __LINE__, __FILE__);
+		exit(1);
+	}
+	
+	printf("GOT IT\n");
+	F1->Terminer();
+		
+	// F1->TracePlan(F1->framePlan);
 	
 	printf("Hello World\n");
 	

@@ -1,28 +1,4 @@
-#define MAX     20
 
-typedef struct
-   { long       lType;
-     pid_t      idProcess;
-     int        Requete;
-     int        Message[2];
-   } MESSAGE;
-
-typedef struct
-   { long       lType;
-     pid_t      idProcess;
-     int        Requete;
-     int        Message[MAX];
-   } MESSAGEMAX;
-
-#define         RECHERCHE       1
-#define         IDENTIFICATION  2
-#define         ARRET	 	3
-
-typedef struct
-   { char       Station[20];            // Nom de la station
-     int        L;                      // Ligne
-     int        C;                      // Colonne
-   } DONNEE;
 
 typedef struct
    { int        N;              // Numero de la station

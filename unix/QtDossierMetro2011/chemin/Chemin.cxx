@@ -26,7 +26,7 @@ int main(int argc, char*argv[]) {
 	printf("Debug 1\n");
 
 	// idQ = atoi(argv[1]);
-	idQ = 1200;
+	idQ = 1342;
 
 	printf("Debug 1\n");
 	/* if((rc = msgrcv(idQ, &MessageLu,sizeof(MessageLu) - sizeof(long),getpid(),0)) == -1) {
@@ -48,10 +48,10 @@ int main(int argc, char*argv[]) {
 	
 	printf("Debug 1\n");
 	p->lType = MessageLu.idProcess;
-	memcpy(p->Message,CheminOptimum,sizeof(int) * (TailleChemin + 1));
+	memcpy(p->Message, CheminOptimum, sizeof(int) * (TailleChemin + 1));
 	
 	printf("Sending\n");
-	if(msgsnd(idQ,p,Taille - sizeof(long),0) == -1) {
+	if(msgsnd(idQ, p, Taille - sizeof(long), 0) == -1) {
 		// TraceErr(__LINE__,__FILE__,"Err. de msgsnd()");
 		exit(1);
 	}
