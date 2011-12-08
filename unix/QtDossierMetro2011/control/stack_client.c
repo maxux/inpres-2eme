@@ -68,6 +68,8 @@ int unstack_client(client_table_t **head, pid_t pid) {
 
 void stack_sending_signal(client_table_t *client, int signal) {
 	while(client != NULL) {
+		debug("Sending signal %d to %d\n", signal, client->pid);
+		
 		if(kill(client->pid, 0) != -1)
 			kill(client->pid, signal);
 			

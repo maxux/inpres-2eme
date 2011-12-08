@@ -6,21 +6,33 @@
 #include <sys/shm.h>
 #include <stdlib.h>
 #include <string.h>
+#include <pthread.h>
 
 #include "control.h"
 #include "stack_client.h"
 #include "station_data.h"
+#include "ads.h"
 
 global_t sys;
 
-
-int send_message(int request, void *data, pid_t pid) {
+int send_message(int request, void *data, pid_t pid, size_t bsize) {
 	message_t message;	/* Message Queue */
 	
 	message.lType   = pid;
 	message.request = request;
 	message.pid     = getpid();
-	strcpy(message.text, (char*) data);
+	
+	/* Checking if it's a string or a binary data */
+	if(bsize > 0) {
+		/* Avoid memory over flow */
+		if(bsize > sizeof(message.text))
+			bsize = sizeof(message.text);
+		
+		/* Copy binary data */
+		memcpy(message.text, data, bsize);
+		
+	} else strcpy(message.text, (char*) data);
+		
 	
 	if(msgsnd(*(sys.mkey_id), &message, sizeof(message) - sizeof(long), 0)) {
 		perror("msgsnd");
@@ -38,14 +50,17 @@ int main(void) {
 	// pid_t leader_pid;	/* Group Process leader pid */
 	char *shm;		/* Shared Memory Pointer */
 	
+	pthread_t ads;
+	
 	client_table_t **client_head, *clients, *new_client = NULL;
 	
 	clients = NULL;
 	client_head = &clients;
 	
 	/* Init Global Variables */
-	sys.running = 1;
-	sys.mkey_id = &mkey_id;
+	sys.running      = 1;
+	sys.mkey_id      = &mkey_id;
+	sys.clients_head = &clients;
 	
 	/* Intercepting Signals */
 	signal_intercept(SIGINT, sighandler);
@@ -72,33 +87,45 @@ int main(void) {
 		return 2;
 	}
 	
+	/* Linking shm to global */
+	sys.shm     = shm;
+	
 	/* Clearing Shared Memory Segment */
 	memset(shm, '\n', SHARED_MEMORY_SIZE);
 	
 	// DEBUG
-	strcpy(shm, "Hello World");
+	strcpy(shm, "Advertissment");
 		
 	/* Init Process Group */
 	debug("Control PID: %d\n", getpid());
 	
+	/* Starting threads */
+	debug("THR: Threading ads processing...\n");
+	if(pthread_create(&ads, NULL, (void *) show_ads, NULL) != 0)
+		return 1;
+	
 	while(sys.running) {
-		printf("Waiting Messages...\n");
-		message_len = msgrcv(mkey_id, (struct message_t *) &message, sizeof(message_t), 0L, 0);
+		printf("DBG: Waiting Messages...\n");
+		
+		/*
+		 *	Server listen on lType 1. Each message to the server must be send with this type. 
+		 */
+		message_len = msgrcv(mkey_id, (struct message_t *) &message, sizeof(message_t), 1L, 0);
 		if(message_len == -1) {
-			debugc("Reading Message Failed\n");
+			debugc("ERR: Reading Message Failed\n");
 			return 1;
 		}
 		
-		printf("New Message from PID: %d (Type: 0x%02x) :: %s\n", message.pid, message.request, message.text);
+		printf("RAW: New Message from PID: %d (Type: 0x%02x) :: %s\n", message.pid, message.request, message.text);
 		
 		switch(message.request) {
 			case PROTO_QRY_LOGIN:
-				debug("New authentifcation: \n");
+				debug("QRY: New authentifcation: \n");
 				/* TODO: Check Message Validity... */
 				
 				new_client = (client_table_t *) malloc(sizeof(client_table_t));
 				if(!new_client) {
-					debugc("Allocation failed. Client skipped\n");
+					debugc("ERR: Allocation failed. Client skipped\n");
 					break;
 				}
 					
@@ -116,11 +143,11 @@ int main(void) {
 			break;
 			
 			case PROTO_QRY_LOGOUT:
-				debug("User logout: %d\n", message.pid);
+				debug("QRY: User logout: %d\n", message.pid);
 				/* TODO: Check validity */
 				
 				if(unstack_client(client_head, message.pid) != 1)
-					debugc("Unstacking failed. WTF ?\n");
+					debugc("ERR: Unstacking failed. WTF ?\n");
 				
 				stack_client_print(clients);
 			break;
@@ -132,27 +159,42 @@ int main(void) {
 			break;
 			
 			case PROTO_QRY_PATHLIST:
-				debug("Path List Request\n");
-				if(!send_message(PROTO_ACK_PATHLIST, stations, message.pid))
+				debug("QRY: Path List Request (%d)\n", message.pid);
+				
+				if(!send_message(PROTO_ACK_PATHLIST, stations, message.pid, sizeof(stations)))
 					debugc("Cannot send map\n");
 				
-				debug("PATH LIST SENT\n");
+				debug("OK : Path List Sent\n");
 				
 			break;
 			
+			case PROTO_QRY_LINESLIST:
+				debug("QRY: Lines List Request (%d)\n", message.pid);
+				
+				if(!send_message(PROTO_ACK_LINESLIST, lignes, message.pid, sizeof(lignes)))
+					debugc("Cannot send lines\n");
+				
+				debug("OK : Lines List Sent\n");
+				
+			break;
+			
+			case PROTO_ACK_PATHLIST:
+				debug("ACK: Path List\n");
+			break;
+			
 			case PROTO_QRY_SEARCH:
-				debug("New PathFinding...\n");
+				debug("QRY: New PathFinding...\n");
 				/* Fucking fork(); */
 			break;
 			
 			case PROTO_QRY_SHUTDOWN:
-				debug("Shutting down...\n");
+				debug("QRY: Shutting down...\n");
 				stopping_server();
 				return 2;
 			break;
 			
 			default:
-				debugc("Error: Invalid opcode\n");
+				debugc("ERR: Invalid opcode\n");
 		}
 	}
 	

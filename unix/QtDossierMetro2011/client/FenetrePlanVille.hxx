@@ -19,6 +19,9 @@
 	#define DRAW_PLAN		0x01
 	#define DRAW_PATH		0x02
 	
+	#define FIX_FRAME_X		50
+	#define FIX_FRAME_Y		40
+	
 	typedef struct draw_action_t {
 		bool need_repaint;
 		char todo;
@@ -70,6 +73,7 @@
 	typedef struct global_t {
 		FenetrePlanVille *window;
 		int *mkey_id;
+		char *shm;
 		
 	} global_t;
 	
@@ -84,12 +88,15 @@
 	#define PROTO_QRY_PATHLIST	0x07	// QRY for map Path List
 	#define PROTO_ACK_PATHLIST	0x08	// ACK for Path List: list on reply
 	
+	#define PROTO_QRY_LINESLIST	0x09	// QRY for map Lines List
+	#define PROTO_ACK_LINESLIST	0x0A	// ACK for Line List: list on reply
+	
 	#define MESSAGE_KEY_ID		1342
 	
 	#define SHARED_MEMORY_ID	1342
 	#define SHARED_MEMORY_SIZE	2048
 	
-	#define MESSAGE_MAX_SIZE	512
+	#define MESSAGE_MAX_SIZE	2048
 	
 	/* DEBUG */
 	#ifdef COLOR
@@ -128,4 +135,41 @@
 	} message_t;
 	
 	int send_message(int request, void *data);
+	
+	#define METRO_MAX_LIGNE		20
+	#define METRO_MAX_STATION	40
+	
+	typedef struct station_t {
+		char station[20];	/* Nom de la station */
+		int L; 	/* Ligne */
+		int C;	/* Colonne */
+	} station_t;
+	
+	typedef struct position_t {
+		int N; // Numero de la station
+		int L; // Ligne
+		int C; // Colonne
+	} position_t;
+	
+	/* Colored Schema (QT) */
+	typedef struct {
+		position_t position[15];
+		QColor couleur;
+		
+	} ligne_t;
+	
+	/* Colored Schema (interface independant) */
+	typedef struct {
+		position_t position[15];
+		short couleur;
+		
+	} ligne_legacy_t;
+	
+	#define LEGACY_COLOR_BLUE		0x00
+	#define LEGACY_COLOR_RED		0x01
+	#define LEGACY_COLOR_YELLOW		0x02
+	#define LEGACY_COLOR_GREEN		0x03
+	#define LEGACY_COLOR_WHITE		0x04
+	#define LEGACY_COLOR_BLACK		0x05
+	#define LEGACY_COLOR_EOF		0xFF
 #endif

@@ -19,13 +19,13 @@
 
 #include "FenetrePlanVille.hxx"
 
-#define CHEMIN
-
-#include "Commun.dat"
-#include "Donnee.dat"
-
-message_t MessageEnvoie;
 global_t sys;
+
+/* Metro Data */
+station_t stations[METRO_MAX_STATION];
+ligne_t lignes[METRO_MAX_LIGNE];
+ligne_legacy_t legacy_lignes[METRO_MAX_LIGNE];
+
 
 void TracePlan(QFrame* F);
 void TraceParcours(QFrame *, int);
@@ -219,41 +219,28 @@ void FenetrePlanVille::paintEvent(QPaintEvent *event) {
 				for(i = 0; i < 6; i++)
 					TraceParcours(i, paint);
 					
-				TraceChemin(4, tmp, paint);
+				TraceChemin(5, tmp, paint);
 			break;
 		}
 		
 		draw.need_repaint = false;
 	}
-	
-	// paint.setWindow(framePlan->frameRect());
 }
 
 void FenetrePlanVille::TracePlan(QFrame* F) {
-	// int i = 0;
-	// QPainter paint(F);
-	// repaint();
-	
+	/* Notify Redraw Event to redraw the map */
 	draw.need_repaint = true;
 	draw.todo = DRAW_PLAN;
 	repaint();
-		
-		
-		// TraceParcours(F, i);
-	//	i++;
-	// }
 }
 
 void FenetrePlanVille::TraceParcours(int Nb, QPainter &paint) {
-	// QPainter paint(F);
 	int i = 0;
 	
-	printf("UPDATING FROM %d\n", Nb);
+	paint.setPen(lignes[Nb].couleur);
 	
-	paint.setPen(LigneMetro[Nb].Couleur);
-	
-	while(LigneMetro[Nb].Position[i + 1].N) {
-		paint.drawLine(LigneMetro[Nb].Position[i].L + 40, LigneMetro[Nb].Position[i].C + 50, LigneMetro[Nb].Position[i+1].L + 40, LigneMetro[Nb].Position[i+1].C + 50);
+	while(lignes[Nb].position[i + 1].N) {
+		paint.drawLine(lignes[Nb].position[i].L + 40, lignes[Nb].position[i].C + 50, lignes[Nb].position[i+1].L + 40, lignes[Nb].position[i+1].C + 50);
 		i++;
 	}
 	
@@ -261,7 +248,7 @@ void FenetrePlanVille::TraceParcours(int Nb, QPainter &paint) {
 	
 	i = 1;
 	while(i <= 34) {
-		// paint.drawText(Donnee[i].L + 40, Donnee[i].C + 50, Donnee[i].Station);
+		paint.drawText(stations[i].L + 40, stations[i].C + 50, stations[i].station);
 		i++;
 	}
 }
@@ -276,8 +263,12 @@ void FenetrePlanVille::TraceChemin(int Nb, int Chemin[], QPainter &paint) {
 	paint.setPen(pen);
 	
 	while(i < Nb) {
-		paint.drawLine(LigneMetro[Nb].Position[i].L + 40, LigneMetro[Nb].Position[i].C + 50, LigneMetro[Nb].Position[i+1].L + 40, LigneMetro[Nb].Position[i+1].C + 50);
-		// paint.drawText(Donnee[Chemin[i]].L + 40, Donnee[Chemin[i]].C + 50, Donnee[Chemin[i]].Station);
+		// Drawing lines
+		paint.drawLine(lignes[Chemin[i]].position[i].L + FIX_FRAME_Y, lignes[Chemin[i]].position[i].C + FIX_FRAME_X, lignes[Chemin[i]].position[i + 1].L + FIX_FRAME_Y, lignes[Chemin[i]].position[i + 1].C + FIX_FRAME_X);
+		
+		// Drawing over text
+		paint.drawText(stations[Chemin[i]].L + FIX_FRAME_Y, stations[Chemin[i]].C + FIX_FRAME_X, stations[Chemin[i]].station);
+		
 		// Trace("%s",Donnee[Chemin[i]].Station);
 		i++;
 	}
@@ -288,7 +279,7 @@ void sig_handler(int signum) {
 		/* SIGUSR1: New ads */
 		case SIGUSR1:
 			printf("SIGUSR1 intercepted\n");
-			sys.window->AffichePub(sys.window->textInformation, "New ads incomming...");
+			sys.window->AffichePub(sys.window->textInformation, sys.shm);
 		break;
 		
 		case SIGUSR2:
@@ -322,6 +313,48 @@ int signal_intercept(int signal, void (*function)(int)) {
 	return ret;
 }
 
+void convert_legacy_lines(ligne_t *lines, ligne_legacy_t *legacy) {
+	int i = 0;
+	
+	while(legacy[i].couleur != LEGACY_COLOR_EOF) {
+		// Copy Position
+		memcpy(lines[i].position, legacy[i].position, sizeof(legacy[i].position));
+		
+		switch(legacy[i].couleur) {
+			case LEGACY_COLOR_BLUE:
+				lines[i].couleur = Qt::blue;
+			break;
+			
+			case LEGACY_COLOR_RED:
+				lines[i].couleur = Qt::red;
+			break;
+			
+			case LEGACY_COLOR_YELLOW:
+				lines[i].couleur = Qt::yellow;
+			break;
+			
+			case LEGACY_COLOR_GREEN:
+				lines[i].couleur = Qt::green;
+			break;
+			
+			case LEGACY_COLOR_WHITE:
+				lines[i].couleur = Qt::white;
+			break;
+			
+			case LEGACY_COLOR_BLACK:
+				lines[i].couleur = Qt::black;
+			break;
+			
+			default:
+				debugc("Unknown Color Conversion: %d\n", legacy[i].couleur);
+		}
+		
+		i++;
+	}
+	
+	debug("DBG: %d lines converted\n", i);
+}
+
 int main(int argc, char *argv[]) {
 	FenetrePlanVille *F1;
 	message_t message;	/* Message Queue */
@@ -329,6 +362,8 @@ int main(int argc, char *argv[]) {
 	key_t skey;		/* Shared Memory Segment ID */
 	int skey_id;		/* Shared Memory key */
 	char *shm;		/* Shared Memory Segment */
+
+	char *cname;		/* Client Name */
 	
 	int rc;
 	
@@ -353,7 +388,14 @@ int main(int argc, char *argv[]) {
 	
 	mkey_id = msgget(MESSAGE_KEY_ID, IPC_CREAT | 0666);
 	
-	if(!send_message(PROTO_QRY_LOGIN, (void*) "Hello world")) {
+	/* Setting Client Name */
+	if(argc > 1)
+		cname = argv[1];
+	else
+		cname = "Untitled Client";
+	
+	/* Requesting Login */
+	if(!send_message(PROTO_QRY_LOGIN, (void*) cname)) {
 		debug("Cannot send message to server\n");
 		return 1;
 	}
@@ -370,9 +412,13 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}
 	
+	/* Linking shm to global */
+	sys.shm = shm;
+	
+	/* DEBUG: shm content */
 	printf("DEBUG: <%s>\n", shm);
 
-	/* Launching GUI */
+	/* Building GUI */
 	F1 = new FenetrePlanVille();
 	
 	/* Saving Window's Address */
@@ -380,24 +426,51 @@ int main(int argc, char *argv[]) {
 	
 	// a.setMainWidget(&F1);
 	F1->show();
+	F1->NomVille->setText(cname);
 	
-	/* printf("wait...\n");
-	alarm(2); */
-	if(!send_message(PROTO_QRY_PATHLIST, (void*) "Want Path List"))
+	/* Requesting Path List */
+	if(!send_message(PROTO_QRY_PATHLIST, (void*) "Wantz Path List"))
 		debugc("Cannot downloading map\n");
 	
-	printf("Waiting path list\n");
+	printf("QRY: Path List\n");
 	if((rc = msgrcv(mkey_id, &message, sizeof(message), getpid(), 0)) == -1) {
-		fprintf(stderr, "Err. de msgrcv: %d %s", __LINE__, __FILE__);
+		perror("msgrcv:");
 		exit(1);
 	}
 	
-	printf("GOT IT\n");
-	F1->Terminer();
+	if(message.request == PROTO_ACK_PATHLIST) {
+		printf("ACK: Path List\n");
+		memcpy(stations, message.text, sizeof(stations));
 		
-	// F1->TracePlan(F1->framePlan);
+	} else debugc("Wrong opcode: %d\n", message.request);
 	
-	printf("Hello World\n");
 	
+	/* Requesting Lignes List */
+	if(!send_message(PROTO_QRY_LINESLIST, (void*) "Wantz Lines List"))
+		debugc("Cannot downloading lignes\n");
+	
+	printf("QRY: Lignes List\n");
+	if((rc = msgrcv(mkey_id, &message, sizeof(message), getpid(), 0)) == -1) {
+		perror("msgrcv:");
+		exit(1);
+	}
+	
+	if(message.request == PROTO_ACK_LINESLIST) {
+		printf("ACK: Ligne List\n");
+		
+		/* Copy Data */
+		memcpy(legacy_lignes, message.text, sizeof(legacy_lignes));
+		
+		/* Converting Legacy Lines to Qt-Compatible Lines */
+		convert_legacy_lines(lignes, legacy_lignes);
+		
+	} else debugc("Wrong opcode: %d\n", message.request);
+	
+	/* Writing Map */
+	F1->TracePlan(F1->framePlan);
+	
+	printf("Drawing GUI Interface\n");
+	
+	/* Let's GUI working */
 	return a.exec();
 }
