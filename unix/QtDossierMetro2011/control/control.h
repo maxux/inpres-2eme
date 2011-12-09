@@ -1,6 +1,8 @@
 #ifndef __CONTROL_H
 	#define __CONTROL_H
 	
+	#include <pthread.h>
+	
 	#define ADMIN_PASSWORD		"helloworld"
 	
 	/* Code Prototypes */
@@ -10,11 +12,13 @@
 	
 	/* Global Variables */
 	typedef struct global_t {
-		char running;
+		int running;
 		int *mkey_id;
 		int *skey_id;
-		struct client_table_t **clients_head;
 		char *shm;
+		struct client_table_t **clients_head;
+		pthread_t *ads;
+		pthread_t *ping;
 		
 	} global_t;
 #endif

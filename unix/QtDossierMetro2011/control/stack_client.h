@@ -7,7 +7,7 @@
 		pid_t pid;
 		char name[20];
 		int name_id;
-		char alive;
+		int alive;
 		
 		struct client_table_t *next;
 		

@@ -39,6 +39,8 @@ int main(void) {
 	sys.mkey_id      = &mkey_id;
 	sys.skey_id      = &skey_id;
 	sys.clients_head = &clients;
+	sys.ping         = NULL;
+	sys.ads          = NULL;
 	
 	/* Intercepting Signals */
 	signal_intercept(SIGINT, sighandler);
@@ -82,9 +84,13 @@ int main(void) {
 	if(pthread_create(&ads, NULL, (void *) show_ads, NULL) != 0)
 		return 1;
 	
+	sys.ads = &ads;
+	
 	debug("THR: Threading ping processing...\n");
 	if(pthread_create(&ping, NULL, (void *) keep_alive, NULL) != 0)
 		return 1;
+	
+	sys.ping = &ping;
 	
 	while(sys.running) {		
 		printf("DBG: Waiting Messages...\n");
@@ -146,6 +152,7 @@ int main(void) {
 					
 				new_client->pid   = message.pid;
 				new_client->alive = 1;
+				new_client->next  = NULL;
 				strncpy(new_client->name, message.text, sizeof(new_client->name));
 				
 				stack_client(client_head, new_client);
@@ -227,6 +234,18 @@ int main(void) {
 }
 
 void stopping_server() {
+	debug("Stopping advertissment thread...\n");
+	if(pthread_cancel(*(sys.ads)))
+		debugc("ERR: Error while stopping ads thread\n");
+	
+	pthread_join(*(sys.ads), NULL);
+	
+	debug("Stopping ping thread...\n");
+	if(pthread_cancel(*(sys.ping)))
+		debugc("ERR: Error while stopping ping thread\n");
+	
+	pthread_join(*(sys.ping), NULL);
+	
 	debug("Cleaning Messages Queue...\n");
 	
 	if(msgctl(*(sys.mkey_id), IPC_RMID, NULL) < 0)
