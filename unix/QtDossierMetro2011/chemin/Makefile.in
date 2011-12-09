@@ -20,4 +20,4 @@ clean:
 	rm -fv *.o
 
 mrproper: clean
-	rm -fv $(EXEC) $(CLEANE)
+	rm -fv $(EXEC) $(CLEANE) Makefile

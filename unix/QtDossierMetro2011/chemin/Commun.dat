@@ -32,10 +32,10 @@ typedef struct
 
 
 #ifdef CHEMIN
-#include <qcolor.h>
+
 typedef struct
    { POSITION   Position[15];
-     QColor        Couleur;
+     int        Couleur;
    } LIGNEMETRO;
 #endif
 

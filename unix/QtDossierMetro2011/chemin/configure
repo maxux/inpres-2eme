@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Value: c / c++
-PROJECT_TYPE="c++"
+PROJECT_TYPE="c"
 
 # Setting project name
 PROJECT_NAME="chemin"

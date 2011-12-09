@@ -5,28 +5,49 @@
 #include <sys/ipc.h>
 #include <sys/msg.h>
 
-#define     CHEMIN
+#include "chemin.h"
 
-#include "Commun.dat"
-#include "Donnee.dat"
+global_t sys;
 
-int Recherche(int NoeudCourant,int NoeudDestination,int TailleActuelle, int CheminSuivit[],int CheminOptimum[],int *TailleChemin);
-void AffChemin(int aChemin[],int TailleChemin);
-
-int idQ;
-
-MESSAGE		MessageLu;
+int send_message(int request, void *data, pid_t pid) {
+	message_t message;	/* Message Queue */
+	
+	message.lType   = pid;
+	message.request = request;
+	message.pid     = getpid();
+	strcpy(message.text, (char*) data);
+	
+	if(msgsnd(*(sys.mkey_id), &message, sizeof(message) - sizeof(long), 0)) {
+		perror("msgsnd");
+		return 0;
+	}
+	
+	return 1;
+}
 
 int main(int argc, char*argv[]) {
 	int CheminSuivit[55];
 	int CheminOptimum[55];
 	int TailleChemin = 0;
 	int rc;
+	int mkey_id;
+	
+	pid_t outclient;
 
 	printf("Debug 1\n");
+	
+	/* System Global */
+	sys.mkey_id = &mkey_id;
 
-	// idQ = atoi(argv[1]);
-	idQ = 1342;
+	if((mkey_id = msgget(MESSAGE_KEY_ID, IPC_CREAT | 0666)) < 0) {
+		perror("msgget");
+		return 1;
+	}
+	
+	/* if((rc = msgrcv(mkey_id, &message, sizeof(message), getpid(), 0)) == -1) {
+		perror("msgrcv");
+		return 1;
+	} */
 
 	printf("Debug 1\n");
 	/* if((rc = msgrcv(idQ, &MessageLu,sizeof(MessageLu) - sizeof(long),getpid(),0)) == -1) {
@@ -37,21 +58,21 @@ int main(int argc, char*argv[]) {
 
 	printf("Debug 1\n");
 	// Recherche(MessageLu.Message[0], MessageLu.Message[1], 0, CheminSuivit, &(CheminOptimum[1]), &TailleChemin);
-	Recherche(2, 5, 0, CheminSuivit, &(CheminOptimum[1]), &TailleChemin);
+	Recherche(1, 8, 0, CheminSuivit, &(CheminOptimum[1]), &TailleChemin);
 
 	printf("Debug 1\n");
-	CheminOptimum[0] = MessageLu.Message[0];
+	// CheminOptimum[0] = MessageLu.Message[0];
 	AffChemin(CheminOptimum, TailleChemin + 1);
 
 	int Taille = sizeof(long) + sizeof(int) + sizeof(pid_t) + sizeof(int) * (TailleChemin + 1);
 	MESSAGE	*p = (MESSAGE *) malloc(Taille);
 	
 	printf("Debug 1\n");
-	p->lType = MessageLu.idProcess;
+	// p->lType = MessageLu.idProcess;
 	memcpy(p->Message, CheminOptimum, sizeof(int) * (TailleChemin + 1));
 	
 	printf("Sending\n");
-	if(msgsnd(idQ, p, Taille - sizeof(long), 0) == -1) {
+	if(msgsnd(mkey_id, p, Taille - sizeof(long), 0) == -1) {
 		// TraceErr(__LINE__,__FILE__,"Err. de msgsnd()");
 		exit(1);
 	}
@@ -90,6 +111,7 @@ int Recherche(int NoeudCourant, int NoeudDestination, int TailleActuelle, int Ch
 	}
 	
 	Noeud[NoeudCourant].Visite = 0;
+	
 	return Mrc;
 }
 

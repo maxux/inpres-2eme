@@ -8,6 +8,22 @@ for i in $CONF; do
 	cd $i && ./configure && cd ..
 done
 
-cp Makefile.in Makefile
+# Generating Makefile
+echo "all:" > Makefile
+for i in $CONF; do
+	echo "	cd $i && \$(MAKE)" >> Makefile
+done
+
+echo "clean:" >> Makefile
+for i in $CONF; do
+	echo "	cd $i && \$(MAKE) clean" >> Makefile
+done
+
+echo "mrproper:" >> Makefile
+for i in $CONF; do
+	echo "	cd $i && \$(MAKE) mrproper" >> Makefile
+done
+
+echo "	rm Makefile" >> Makefile
 
 echo -e "\nAll done. Please make naow."
