@@ -10,14 +10,19 @@
 #include <qpainter.h>
 #include <qapplication.h>
 
-#include <stdio.h>
+#include <cstdio>
+#include <cstdlib>
 #include <signal.h>
 
 #include <sys/ipc.h>
 #include <sys/msg.h>
 #include <sys/shm.h>
 
+
 #include "FenetrePlanVille.hxx"
+#include "ipc_messages.hxx"
+#include "metro_protocol.hxx"
+#include "debug.hxx"
 
 global_t sys;
 
@@ -129,24 +134,8 @@ void FenetrePlanVille::languageChange() {
 }
 
 void FenetrePlanVille::Terminer() {
-	send_message(PROTO_QRY_LOGOUT, (void*) "kthxbye");
+	send_message(QRY_LOGOUT, (void*) "kthxbye");
 	exit(0);
-}
-
-int send_message(int request, void *data) {
-	message_t message;	/* Message Queue */
-	
-	message.lType   = 1L;
-	message.request = request;
-	message.pid     = getpid();
-	strcpy(message.text, (char*) data);
-	
-	if(msgsnd(*(sys.mkey_id), &message, sizeof(message) - sizeof(long), 0)) {
-		perror("msgsnd");
-		return 0;
-	}
-	
-	return 1;
 }
 
 void FenetrePlanVille::Selection() {
@@ -160,7 +149,7 @@ void FenetrePlanVille::Selection() {
 
 	// TracePlan(framePlan);
 	MessageEnvoie.lType = 1L;
-	MessageEnvoie.request = PROTO_SEARCH;
+	MessageEnvoie.request = SEARCH;
 	MessageEnvoie.pid = getpid();
 	// MessageEnvoie.message[0] = 1;
 	// MessageEnvoie.message[1] = Arrivee;
@@ -275,7 +264,15 @@ void FenetrePlanVille::TraceChemin(int Nb, int Chemin[], QPainter &paint) {
 }
 
 void sig_handler(int signum) {
+	if(!sys.interface_ready)
+		return;
+		
 	switch(signum) {
+		/* SIGPWR: Ping */
+		case SIGPWR:
+			send_message(ACK_PONG, (void*) "Pong !");
+		break;
+		
 		/* SIGUSR1: New ads */
 		case SIGUSR1:
 			printf("SIGUSR1 intercepted\n");
@@ -316,32 +313,32 @@ int signal_intercept(int signal, void (*function)(int)) {
 void convert_legacy_lines(ligne_t *lines, ligne_legacy_t *legacy) {
 	int i = 0;
 	
-	while(legacy[i].couleur != LEGACY_COLOR_EOF) {
+	while(legacy[i].couleur != LCOLOR_EOF) {
 		// Copy Position
 		memcpy(lines[i].position, legacy[i].position, sizeof(legacy[i].position));
 		
 		switch(legacy[i].couleur) {
-			case LEGACY_COLOR_BLUE:
+			case LCOLOR_BLUE:
 				lines[i].couleur = Qt::blue;
 			break;
 			
-			case LEGACY_COLOR_RED:
+			case LCOLOR_RED:
 				lines[i].couleur = Qt::red;
 			break;
 			
-			case LEGACY_COLOR_YELLOW:
+			case LCOLOR_YELLOW:
 				lines[i].couleur = Qt::yellow;
 			break;
 			
-			case LEGACY_COLOR_GREEN:
+			case LCOLOR_GREEN:
 				lines[i].couleur = Qt::green;
 			break;
 			
-			case LEGACY_COLOR_WHITE:
+			case LCOLOR_WHITE:
 				lines[i].couleur = Qt::white;
 			break;
 			
-			case LEGACY_COLOR_BLACK:
+			case LCOLOR_BLACK:
 				lines[i].couleur = Qt::black;
 			break;
 			
@@ -372,7 +369,8 @@ int main(int argc, char *argv[]) {
 	printf("Loading...\n");
 	
 	/* Affecting Global Settings */
-	sys.mkey_id = &mkey_id;
+	sys.mkey_id         = &mkey_id;
+	sys.interface_ready = 0;
 	
 	/* Intercept ALARM */
 	signal_intercept(SIGALRM, sig_handler);
@@ -380,13 +378,19 @@ int main(int argc, char *argv[]) {
 	/* Intercept SIGUSR1: Advertissment */
 	signal_intercept(SIGUSR1, sig_handler);
 	
-	/* Incercept SIGUSR2: Sys Admin Message */
+	/* Intercept SIGUSR2: Sys Admin Message */
 	signal_intercept(SIGUSR2, sig_handler);
 	
-	/* Interrupt SIGINT: Closing */
+	/* Intercept SIGPWR: Ping Query */
+	signal_intercept(SIGPWR, sig_handler);
+	
+	/* Intercept SIGINT: Closing */
 	signal_intercept(SIGINT, sig_handler);
 	
-	mkey_id = msgget(MESSAGE_KEY_ID, IPC_CREAT | 0666);
+	if((mkey_id = msgget(MESSAGE_KEY_ID, IPC_CREAT | 0666)) < 0) {
+		perror("msgget");
+		return 1;
+	}
 	
 	/* Setting Client Name */
 	if(argc > 1)
@@ -395,8 +399,22 @@ int main(int argc, char *argv[]) {
 		cname = "Untitled Client";
 	
 	/* Requesting Login */
-	if(!send_message(PROTO_QRY_LOGIN, (void*) cname)) {
+	if(!send_message(QRY_LOGIN, (void*) cname)) {
 		debug("Cannot send message to server\n");
+		return 1;
+	}
+	
+	read_message(&message);
+	
+	if(message.request == ACK_LOGIN) {
+		debug("ACK: Login valid\n");
+		
+	} else if(message.request == ERR_DENIED) {
+		debugc("ERR: Cannot login: (#%d) %s\n", message.request, message.text);
+		return 1;
+		
+	} else {
+		debugc("ERR: Unknown opcode (%d) from server\n", message.request);
 		return 1;
 	}
 	
@@ -429,16 +447,13 @@ int main(int argc, char *argv[]) {
 	F1->NomVille->setText(cname);
 	
 	/* Requesting Path List */
-	if(!send_message(PROTO_QRY_PATHLIST, (void*) "Wantz Path List"))
+	if(!send_message(QRY_PATHLIST, (void*) "Wantz Path List"))
 		debugc("Cannot downloading map\n");
 	
 	printf("QRY: Path List\n");
-	if((rc = msgrcv(mkey_id, &message, sizeof(message), getpid(), 0)) == -1) {
-		perror("msgrcv:");
-		exit(1);
-	}
+	read_message(&message);
 	
-	if(message.request == PROTO_ACK_PATHLIST) {
+	if(message.request == ACK_PATHLIST) {
 		printf("ACK: Path List\n");
 		memcpy(stations, message.text, sizeof(stations));
 		
@@ -446,16 +461,13 @@ int main(int argc, char *argv[]) {
 	
 	
 	/* Requesting Lignes List */
-	if(!send_message(PROTO_QRY_LINESLIST, (void*) "Wantz Lines List"))
+	if(!send_message(QRY_LINESLIST, (void*) "Wantz Lines List"))
 		debugc("Cannot downloading lignes\n");
 	
 	printf("QRY: Lignes List\n");
-	if((rc = msgrcv(mkey_id, &message, sizeof(message), getpid(), 0)) == -1) {
-		perror("msgrcv:");
-		exit(1);
-	}
+	read_message(&message);
 	
-	if(message.request == PROTO_ACK_LINESLIST) {
+	if(message.request == ACK_LINESLIST) {
 		printf("ACK: Ligne List\n");
 		
 		/* Copy Data */
@@ -472,5 +484,7 @@ int main(int argc, char *argv[]) {
 	printf("Drawing GUI Interface\n");
 	
 	/* Let's GUI working */
+	sys.interface_ready = 1;
+	
 	return a.exec();
 }

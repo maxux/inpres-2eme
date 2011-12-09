@@ -8,39 +8,15 @@
 #include <string.h>
 #include <pthread.h>
 
+#include "debug.h"
+#include "metro_protocol.h"
+#include "ipc_messages.h"
 #include "control.h"
 #include "stack_client.h"
 #include "station_data.h"
 #include "ads.h"
 
 global_t sys;
-
-int send_message(int request, void *data, pid_t pid, size_t bsize) {
-	message_t message;	/* Message Queue */
-	
-	message.lType   = pid;
-	message.request = request;
-	message.pid     = getpid();
-	
-	/* Checking if it's a string or a binary data */
-	if(bsize > 0) {
-		/* Avoid memory over flow */
-		if(bsize > sizeof(message.text))
-			bsize = sizeof(message.text);
-		
-		/* Copy binary data */
-		memcpy(message.text, data, bsize);
-		
-	} else strcpy(message.text, (char*) data);
-		
-	
-	if(msgsnd(*(sys.mkey_id), &message, sizeof(message) - sizeof(long), 0)) {
-		perror("msgsnd");
-		return 0;
-	}
-	
-	return 1;
-}
 
 int main(void) {
 	message_t message;	/* Message Queue */
@@ -49,10 +25,11 @@ int main(void) {
 	int message_len;	
 	// pid_t leader_pid;	/* Group Process leader pid */
 	char *shm;		/* Shared Memory Pointer */
+	int i;			/* Counter */
 	
-	pthread_t ads;
+	pthread_t ads, ping;	/* Threads for multiple processing */
 	
-	client_table_t **client_head, *clients, *new_client = NULL;
+	client_table_t **client_head, *clients, *new_client = NULL, *client_temp = NULL;
 	
 	clients = NULL;
 	client_head = &clients;
@@ -60,6 +37,7 @@ int main(void) {
 	/* Init Global Variables */
 	sys.running      = 1;
 	sys.mkey_id      = &mkey_id;
+	sys.skey_id      = &skey_id;
 	sys.clients_head = &clients;
 	
 	/* Intercepting Signals */
@@ -70,7 +48,7 @@ int main(void) {
 	
 	mkey = MESSAGE_KEY_ID;
 	if((mkey_id = msgget(mkey, IPC_CREAT | 0666)) < 0) {
-		debugc("Cannot create message key\n");
+		perror("msgget");
 		return 1;
 	}
 	
@@ -78,12 +56,12 @@ int main(void) {
 	debug("Creating Shared Memory Segment\n");
 	skey = SHARED_MEMORY_ID;
 	if((skey_id = shmget(skey, SHARED_MEMORY_SIZE, IPC_CREAT | 0666)) < 0) {
-		debugc("Cannot create shared memory segment\n");
+		perror("shmget");
 		return 2;
 	}
 	
 	if((shm = shmat(skey_id, NULL, 0)) == (void *) -1) {
-		debugc("Cannot attach shared memory segment id\n");
+		perror("shmat");
 		return 2;
 	}
 	
@@ -91,7 +69,7 @@ int main(void) {
 	sys.shm     = shm;
 	
 	/* Clearing Shared Memory Segment */
-	memset(shm, '\n', SHARED_MEMORY_SIZE);
+	memset(shm, '\0', SHARED_MEMORY_SIZE);
 	
 	// DEBUG
 	strcpy(shm, "Advertissment");
@@ -104,7 +82,11 @@ int main(void) {
 	if(pthread_create(&ads, NULL, (void *) show_ads, NULL) != 0)
 		return 1;
 	
-	while(sys.running) {
+	debug("THR: Threading ping processing...\n");
+	if(pthread_create(&ping, NULL, (void *) keep_alive, NULL) != 0)
+		return 1;
+	
+	while(sys.running) {		
 		printf("DBG: Waiting Messages...\n");
 		
 		/*
@@ -116,24 +98,60 @@ int main(void) {
 			return 1;
 		}
 		
-		printf("RAW: New Message from PID: %d (Type: 0x%02x) :: %s\n", message.pid, message.request, message.text);
+		debugn("RAW: New Message from PID: %d (Type: 0x%02x) :: %s\n", message.pid, message.request, message.text);
 		
 		switch(message.request) {
-			case PROTO_QRY_LOGIN:
-				debug("QRY: New authentifcation: \n");
-				/* TODO: Check Message Validity... */
+			case ACK_PONG:
+				client_temp = stack_return_client(clients, message.pid);
 				
+				if(client_temp != NULL) {
+					client_temp->alive = 1;
+					
+				} else debugc("ERR: Pong message from an unknown client ! (Pid: %d)\n", message.pid);
+			break;
+			
+			case QRY_LOGIN:
+				debug("QRY: New authentifcation from station: %s\n", message.text);
+				
+				i = 1;
+				while(stations[i].L && stations[i].C) {
+					if(strcmp(stations[i].station, message.text) == 0) {
+						i = -1;
+						break;
+						
+					} else i++;
+				}
+				
+				/* Client denied */
+				if(i > 0) {
+					send_message(ERR_DENIED, (void*) "Access denied", message.pid, 0);
+					debugc("ERR: Request station not allowed. Pid %d skipped.\n", message.pid);
+					break;
+				}
+				
+				/* Client already logged in */
+				client_temp = stack_search_station(clients, message.text);
+				if(client_temp != NULL) {
+					send_message(ERR_DENIED, (void*) "Station already registred", message.pid, 0);
+					debugc("ERR: A second instance of station claimed by %d. Original is %d.\n", message.pid, client_temp->pid);
+					break;
+				}
+				
+				/* Client validated */
 				new_client = (client_table_t *) malloc(sizeof(client_table_t));
 				if(!new_client) {
 					debugc("ERR: Allocation failed. Client skipped\n");
 					break;
 				}
 					
-				new_client->pid = message.pid;
+				new_client->pid   = message.pid;
+				new_client->alive = 1;
 				strncpy(new_client->name, message.text, sizeof(new_client->name));
 				
 				stack_client(client_head, new_client);
 				stack_client_print(clients);
+				
+				send_message(ACK_LOGIN, (void*) "Welcome :)", message.pid, 0);
 				
 				/* if(leader_pid == 0)
 					leader_pid = message.pid;
@@ -142,7 +160,7 @@ int main(void) {
 					perror("[-] setpgid"); */
 			break;
 			
-			case PROTO_QRY_LOGOUT:
+			case QRY_LOGOUT:
 				debug("QRY: User logout: %d\n", message.pid);
 				/* TODO: Check validity */
 				
@@ -152,42 +170,47 @@ int main(void) {
 				stack_client_print(clients);
 			break;
 			
-			/* DEBUG OPCODE */
-			case 0x42:
-				debug("DEBUUUUUG\n");
-				stack_sending_signal(clients, SIGUSR1);
+			case QRY_ADMIN_LOGIN:
+				if(strcmp(message.text, ADMIN_PASSWORD) == 0) {
+					debugn("ADM: Admin connected from pid %d\n", message.pid);
+					send_message(ACK_ADMIN_LOGIN, (void*) "Access granted", message.pid, 0);
+					
+				} else {
+					debugc("ADM: Admin request failed from pid %d\n", message.pid);
+					send_message(ERR_DENIED, (void*) "Wrong password", message.pid, 0);
+				}
 			break;
 			
-			case PROTO_QRY_PATHLIST:
+			case QRY_PATHLIST:
 				debug("QRY: Path List Request (%d)\n", message.pid);
 				
-				if(!send_message(PROTO_ACK_PATHLIST, stations, message.pid, sizeof(stations)))
+				if(!send_message(ACK_PATHLIST, stations, message.pid, sizeof(stations)))
 					debugc("Cannot send map\n");
 				
 				debug("OK : Path List Sent\n");
 				
 			break;
 			
-			case PROTO_QRY_LINESLIST:
+			case QRY_LINESLIST:
 				debug("QRY: Lines List Request (%d)\n", message.pid);
 				
-				if(!send_message(PROTO_ACK_LINESLIST, lignes, message.pid, sizeof(lignes)))
+				if(!send_message(ACK_LINESLIST, lignes, message.pid, sizeof(lignes)))
 					debugc("Cannot send lines\n");
 				
 				debug("OK : Lines List Sent\n");
 				
 			break;
 			
-			case PROTO_ACK_PATHLIST:
+			case ACK_PATHLIST:
 				debug("ACK: Path List\n");
 			break;
 			
-			case PROTO_QRY_SEARCH:
+			case QRY_SEARCH:
 				debug("QRY: New PathFinding...\n");
 				/* Fucking fork(); */
 			break;
 			
-			case PROTO_QRY_SHUTDOWN:
+			case QRY_SHUTDOWN:
 				debug("QRY: Shutting down...\n");
 				stopping_server();
 				return 2;
@@ -208,6 +231,11 @@ void stopping_server() {
 	
 	if(msgctl(*(sys.mkey_id), IPC_RMID, NULL) < 0)
 		perror("msgctl");
+	
+	debug("Cleaning Shared Memory Area...\n");
+	
+	if(shmctl(*(sys.skey_id), IPC_RMID, NULL) < 0)
+		perror("shmctl");
 }
 
 void sighandler(int signal) {

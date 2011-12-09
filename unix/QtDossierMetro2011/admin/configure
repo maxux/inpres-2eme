@@ -1,29 +1,15 @@
 #!/bin/bash
 
 # Value: c / c++
-PROJECT_TYPE="c++"
+PROJECT_TYPE="c"
 
 # Setting project name
-PROJECT_NAME="client"
+PROJECT_NAME="admin"
 
-if [ "$(uname)" == "SunOS" ]; then
-	# Special Code for inpres-Solaris
-	MOC_BIN="/usr/local/qt/bin/moc"
-	DEFINES="-DQT_NO_DEBUG -DQT_QT3SUPPORT_LIB -DQT3_SUPPORT -DQT_GUI_LIB -DQT_CORE_LIB -DQT_SHARED -DCOLOR"
-	CFLAGS="-W -Wall -O2 -pipe -g -D DEBUG -D_REENTRANT -I /usr/local/qt/include -I /usrlocal/qt/mkspec/default"
-	LDFLAGS="-Wl,-O1 -lqt -L/usr/local/qt/lib -L/usr/openwin/lib -lpthread"
-	EXTRACLEAN=""
-	
-elif [ "$(uname)" == "Linux" ]; then
-	MOC_BIN="moc"
-	DEFINES="-DQT_NO_DEBUG -DQT_QT3SUPPORT_LIB -DQT3_SUPPORT -DQT_GUI_LIB -DQT_CORE_LIB -DQT_SHARED -DCOLOR"
-	CFLAGS="-W -Wall -O2 -pipe -g -D DEBUG -D_REENTRANT -I/usr/share/qt4/mkspecs/linux-g++ -I/usr/include/qt4/QtCore -I/usr/include/qt4/QtGui -I/usr/include/qt4/Qt3Support -I/usr/include/qt4"
-	LDFLAGS="-Wl,-O1 -Wl,-rpath,/usr/lib64/qt4 -L/usr/lib64/qt4 -lQt3Support -L/usr/lib64 -L/usr/lib64/qt4 -lQtSql -L/usr/lib64/mysql -lQtXml -L/usr/X11R6/lib -lQtNetwork -lQtGui -lQtCore -lgthread-2.0 -lrt -lglib-2.0 -lpthread"
-	EXTRACLEAN=""
-else
-	echo "Operating system not supported"
-	exit 1
-fi
+DEFINES="-D COLOR -D DEBUG"
+CFLAGS="-W -Wall -O2 -pipe -g"
+LDFLAGS=""
+EXTRACLEAN=""
 
 ##########################################################################
 # Autodefined variables
@@ -95,21 +81,3 @@ LDFLAGS_X=$(echo "$LDFLAGS" | sed 's/\//\\\//g')
 CFLAGS_X=$(echo "$CFLAGS" | sed 's/\//\\\//g')
 EXTRACLEAN_X=$(echo "$EXTRACLEAN" | sed 's/\//\\\//g')
 sed "s/__COMPILER__/${COMPILER}/;s/__PROJECT_NAME__/${PROJECT_NAME}/;s/__EXTRA_CLEAN__/${EXTRACLEAN_X}/;s/__DEFINES__/${DEFINES}/;s/__LDFLAGS__/${LDFLAGS_X}/;s/__CFLAGS__/${CFLAGS_X}/;s/__CODE_EXTENSION__/${CODE_EXTENSION}/;s/__HEADER_EXTENSION__/${HEADER_EXTENSION}/" < Makefile.in > Makefile
-
-# Removing moc files
-echo "Removing moc files..."
-rm -f moc_*
-
-# Generating new moc files
-echo "Generating moc files..."
-
-for i in *.hxx; do
-	OUTFILE="moc_$(basename $i .hxx).cxx"
-        $MOC_BIN -nw $i -o $OUTFILE
-        
-        if [ -s $OUTFILE ]; then
-		touch moc_$i
-	else
-		rm $OUTFILE
-	fi
-done
