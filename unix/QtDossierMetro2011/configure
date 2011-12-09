@@ -1,11 +1,13 @@
 #!/bin/bash
 set -e
 
+PRE=$(pwd)
 CONF="client control chemin"
 
 for i in $CONF; do
 	echo "-- Configuring $i"
-	cd $i && ./configure && cd ..
+	cd $i && ./configure
+	cd $PRE
 done
 
 # Generating Makefile
@@ -26,4 +28,4 @@ done
 
 echo "	rm Makefile" >> Makefile
 
-echo -e "\nAll done. Please make naow."
+echo -e "\nPlease try make naow."
