@@ -9,5 +9,5 @@
 	} global_t;
 	
 	int Recherche(int NoeudCourant,int NoeudDestination,int TailleActuelle, int CheminSuivit[],int CheminOptimum[],int *TailleChemin);
-	void AffChemin(pathway_t *pathway);
+	void AffChemin(pathway_t *pathway);	
 #endif

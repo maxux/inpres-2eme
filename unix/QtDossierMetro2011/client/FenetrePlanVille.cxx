@@ -192,7 +192,7 @@ void FenetrePlanVille::AffichePub(QTextEdit *T, const char *P) {
 
 void FenetrePlanVille::paintEvent(QPaintEvent *event) {
 	QPainter paint(PAINTEVENT_FIX_OUTPUT);
-	int i;
+	int i = 0;
 	
 	if(sys.first_start && sys.interface_ready) {
 		/* Redraw map if it's the first time */
@@ -204,23 +204,25 @@ void FenetrePlanVille::paintEvent(QPaintEvent *event) {
 	
 	if(draw.need_repaint) {
 		event = NULL;
-			
+
 		switch(draw.todo) {
 			case DRAW_PLAN:
 				debug("Drawing map\n");
-				for(i = 0; i < 6; i++)
-					TraceParcours(i, paint);
+				while(legacy_lignes[i].couleur != LCOLOR_EOF)
+					TraceParcours(i++, paint);
+					
 			break;
 			
 			case DRAW_PATH:
 				debug("Drawing map with lines\n");
-				for(i = 0; i < 6; i++)
-					TraceParcours(i, paint);
+				while(legacy_lignes[i].couleur != LCOLOR_EOF)
+					TraceParcours(i++, paint);
 					
 				TraceChemin(pathway.nbstation, pathway.step, paint);
 			break;
 		}
 		
+		TraceStation(paint);
 		draw.need_repaint = false;
 	}
 }
@@ -232,21 +234,44 @@ void FenetrePlanVille::TracePlan() {
 	repaint();
 }
 
+int on_pathway(int id) {
+	int i;
+	
+	for(i = 1; i < pathway.nbstation; i++)
+		if(pathway.step[i] == id)
+			return 1;
+	
+	return 0;
+}
+
 void FenetrePlanVille::TraceParcours(int Nb, QPainter &paint) {
 	int i = 0;
 	
 	paint.setPen(lignes[Nb].couleur);
 	
-	while(lignes[Nb].position[i + 1].N) {
-		paint.drawLine(lignes[Nb].position[i].L + FIX_FRAME_Y, lignes[Nb].position[i].C + FIX_FRAME_X, lignes[Nb].position[i+1].L + FIX_FRAME_Y, lignes[Nb].position[i+1].C + FIX_FRAME_X);
+	printf("LINE: %d\n", Nb);
+	
+	while(lignes[Nb].position[i + 1].N && lignes[Nb].position[i + 1].L) {
+		printf("Writing Line (%d, %d) -> (%d, %d)\n", lignes[Nb].position[i].L, lignes[Nb].position[i].C, lignes[Nb].position[i + 1].L, lignes[Nb].position[i + 1].C);
+		paint.drawLine(lignes[Nb].position[i].L + FIX_FRAME_Y, lignes[Nb].position[i].C + FIX_FRAME_X, lignes[Nb].position[i + 1].L + FIX_FRAME_Y, lignes[Nb].position[i + 1].C + FIX_FRAME_X);
 		i++;
 	}
+}
+
+void FenetrePlanVille::TraceStation(QPainter &paint) {
+	int i = 1;
 	
-	paint.setPen(Qt::black);
-	
-	i = 1;
 	while(i <= 34) {
-		paint.drawText(stations[i].L + FIX_FRAME_Y, stations[i].C + FIX_FRAME_X, stations[i].station);
+		/* Avoid overdraw */
+		if(!on_pathway(i)) {
+			if(i == sys.station_id)
+				paint.setPen(Qt::blue);
+			else
+				paint.setPen(Qt::black);
+				
+			paint.drawText(stations[i].L + FIX_FRAME_Y, stations[i].C + FIX_FRAME_X, stations[i].station);
+		}
+		
 		i++;
 	}
 }
@@ -256,8 +281,6 @@ void find_xy_station(int station_id, int *x, int *y) {
 	int j = 0;
 	
 	while(legacy_lignes[i].couleur != LCOLOR_EOF) {
-		printf("Searching station %d\n", station_id);
-		
 		for(j = 0; j < 15; j++) {
 			if(lignes[i].position[j].N == station_id) {
 				*x = lignes[i].position[j].L;
@@ -274,7 +297,7 @@ void find_xy_station(int station_id, int *x, int *y) {
 void FenetrePlanVille::TraceChemin(int Nb, int Chemin[], QPainter &paint) {
 	QPen pen;
 	int i = 0;
-	int x1, y1, x2, y2;
+	int x1 = 0, y1 = 0, x2 = 0, y2 = 0;
 	
 	pen.setWidth(5);
 	pen.setColor(Qt::red);
@@ -286,12 +309,22 @@ void FenetrePlanVille::TraceChemin(int Nb, int Chemin[], QPainter &paint) {
 		find_xy_station(Chemin[i], &x1, &y1);
 		find_xy_station(Chemin[i + 1], &x2, &y2);
 		
+		debug("DBG: Drawing Station #%d (%d, %d) -> Station #%d (%d, %d)\n", Chemin[i], x1, y1, Chemin[i + 1], x2, y2);
+		
 		paint.drawLine(x1 + FIX_FRAME_Y, y1 + FIX_FRAME_X, x2 + FIX_FRAME_Y, y2 + FIX_FRAME_X);
 		
 		// Drawing over text
-		paint.drawText(stations[Chemin[i]].L + FIX_FRAME_Y, stations[Chemin[i]].C + FIX_FRAME_X, stations[Chemin[i]].station);
+		if(i > 0)
+			paint.drawText(stations[Chemin[i]].L + FIX_FRAME_Y, stations[Chemin[i]].C + FIX_FRAME_X, stations[Chemin[i]].station);
 		
 		i++;
+	}
+	
+	if(i == Nb - 1) {		
+		pen.setColor(Qt::blue);
+		paint.setPen(pen);
+		
+		paint.drawText(stations[Chemin[i]].L + FIX_FRAME_Y, stations[Chemin[i]].C + FIX_FRAME_X, stations[Chemin[i]].station);
 	}
 }
 
@@ -466,6 +499,9 @@ int main(int argc, char *argv[]) {
 	
 	/* Linking shm to global */
 	sys.shm = shm;
+	
+	/* Init pathway to null */
+	memset(&pathway, 0x0, sizeof(pathway));
 	
 	/* DEBUG: shm content */
 	printf("DEBUG: <%s>\n", shm);

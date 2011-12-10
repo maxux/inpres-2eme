@@ -22,7 +22,10 @@
 		ACK_JOIN_GROUP		= 0x06,	// ACK for client process-group		
 		
 		QRY_PATHLIST		= 0x07,	// QRY for map Path List
-		ACK_PATHLIST		= 0x08,	// ACK for Path List: list on reply		
+		ACK_PATHLIST		= 0x08,	// ACK for Path List: list on reply
+		
+		QRY_NODESLIST		= 0x12,	// QRY for metro_nodes list
+		ACK_NODESLIST		= 0x13,	// ACK for metro_nodes list
 		
 		QRY_LINESLIST		= 0x09,	// QRY for map Lines List
 		ACK_LINESLIST		= 0x0A,	// ACK for Line List: list on reply
@@ -62,6 +65,12 @@
 		int C; // Colonne
 		
 	} position_t;
+	
+	typedef struct {
+		int visite;
+		int suivant[6];
+		
+	} metro_nodes_t;
 	
 	/* Colored Schema (interface independant) */
 	typedef struct ligne_legacy_t {

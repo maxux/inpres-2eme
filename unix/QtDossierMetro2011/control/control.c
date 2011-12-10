@@ -47,7 +47,7 @@ int main(void) {
 	signal_intercept(SIGINT, sighandler);
 	
 	/* Creating Message Queue */
-	debug("Creating Message Queue\n");
+	debug("DBG: Creating Message Queue\n");
 	
 	mkey = MESSAGE_KEY_ID;
 	if((mkey_id = msgget(mkey, IPC_CREAT | 0666)) < 0) {
@@ -56,7 +56,7 @@ int main(void) {
 	}
 	
 	/* Creating Shared Memory Segment */
-	debug("Creating Shared Memory Segment\n");
+	debug("DBG: Creating Shared Memory Segment\n");
 	skey = SHARED_MEMORY_ID;
 	if((skey_id = shmget(skey, SHARED_MEMORY_SIZE, IPC_CREAT | 0666)) < 0) {
 		perror("shmget");
@@ -78,7 +78,7 @@ int main(void) {
 	strcpy(shm, "Advertissment");
 		
 	/* Init Process Group */
-	debug("Control PID: %d\n", getpid());
+	debug("DBG: Control PID: %d\n", getpid());
 	
 	/* Starting threads */
 	debug("THR: Threading ads processing...\n");
@@ -105,7 +105,7 @@ int main(void) {
 			return 1;
 		}
 		
-		debugn("RAW: New Message from PID: %d (Type: 0x%02x) :: %s\n", (int) message.pid, message.request, message.text);
+		debugn("RAW: Message from PID: %d (opcode: 0x%02x)\n", (int) message.pid, message.request);
 		
 		switch(message.request) {
 			case ACK_PONG:
@@ -114,7 +114,7 @@ int main(void) {
 				if(client_temp != NULL) {
 					client_temp->alive = 1;
 					
-				} else debugc("ERR: Pong message from an unknown client ! (Pid: %d)\n", message.pid);
+				} else debugc("ERR: Pong message from an unknown client ! (Pid: %d)\n", (int) message.pid);
 			break;
 			
 			case QRY_LOGIN:
@@ -209,11 +209,15 @@ int main(void) {
 					debugc("Cannot send lines\n");
 				
 				debug("OK : Lines List Sent\n");
-				
 			break;
 			
-			case ACK_PATHLIST:
-				debug("ACK: Path List\n");
+			case QRY_NODESLIST:
+				debug("QRY: Nodes List Request (%d)\n", message.pid);
+				
+				if(!send_message(ACK_NODESLIST, nodes, message.pid, sizeof(nodes)))
+					debugc("Cannot send nodes\n");
+				
+				debug("OK : Nodes List Sent\n");
 			break;
 			
 			case QRY_SEARCH:
@@ -233,8 +237,6 @@ int main(void) {
 					send_message(QRY_SEARCH_DATA, (void*) message.text, forking, sizeof(ask_pathway_t));
 					
 				} else debugc("FKR: Failed\n");
-				
-				// send_message(ACK_SEARCH, (void*) &pathway, message.pid, sizeof(pathway));
 			break;
 			
 			case QRY_SHUTDOWN:
@@ -244,7 +246,7 @@ int main(void) {
 			break;
 			
 			default:
-				debugc("ERR: Invalid opcode\n");
+				debugc("ERR: Invalid opcode 0x%x\n", message.request);
 		}
 	}
 	
@@ -254,24 +256,24 @@ int main(void) {
 }
 
 void stopping_server() {
-	debug("Stopping advertissment thread...\n");
+	debug("DBG: Stopping advertissment thread...\n");
 	if(pthread_cancel(*(sys.ads)))
 		debugc("ERR: Error while stopping ads thread\n");
 	
 	pthread_join(*(sys.ads), NULL);
 	
-	debug("Stopping ping thread...\n");
+	debug("DBG: Stopping ping thread...\n");
 	if(pthread_cancel(*(sys.ping)))
 		debugc("ERR: Error while stopping ping thread\n");
 	
 	pthread_join(*(sys.ping), NULL);
 	
-	debug("Cleaning Messages Queue...\n");
+	debug("DBG: Cleaning Messages Queue...\n");
 	
 	if(msgctl(*(sys.mkey_id), IPC_RMID, NULL) < 0)
 		perror("msgctl");
 	
-	debug("Cleaning Shared Memory Area...\n");
+	debug("DBG: Cleaning Shared Memory Area...\n");
 	
 	if(shmctl(*(sys.skey_id), IPC_RMID, NULL) < 0)
 		perror("shmctl");

@@ -27,6 +27,9 @@
 		QRY_LINESLIST		= 0x09,	// QRY for map Lines List
 		ACK_LINESLIST		= 0x0A,	// ACK for Line List: list on reply
 		
+		QRY_NODESLIST		= 0x12,	// QRY for metro_nodes list
+		ACK_NODESLIST		= 0x13,	// ACK for metro_nodes list
+		
 		ACK_PONG		= 0x0B,	// ACK for a Ping Query (via sig)		
 		
 		ERR_DENIED		= 0x0D,	// ERR from server. Client is denied.
@@ -36,39 +39,11 @@
 		
 	} metro_protocol;
 	
-	/* Lines Color List */
-	typedef enum {
-		LCOLOR_BLUE	= 0x00,
-		LCOLOR_RED	= 0x01,
-		LCOLOR_YELLOW	= 0x02,
-		LCOLOR_GREEN	= 0x03,
-		LCOLOR_WHITE	= 0x04,
-		LCOLOR_BLACK	= 0x05,
-		LCOLOR_EOF	= 0xFF
+	typedef struct {
+		int visite;
+		int suivant[6];
 		
-	} legacy_color;
-	
-	/* Stations List */
-	typedef struct station_t {
-		char station[20];	/* Nom de la station */
-		int L; 	/* Ligne */
-		int C;	/* Colonne */
-		
-	} station_t;
-	
-	typedef struct position_t {
-		int N; // Numero de la station
-		int L; // Ligne
-		int C; // Colonne
-		
-	} position_t;
-	
-	/* Colored Schema (interface independant) */
-	typedef struct ligne_legacy_t {
-		position_t position[15];
-		legacy_color couleur;
-		
-	} ligne_legacy_t;
+	} metro_nodes_t;
 	
 	typedef struct ask_pathway_t {
 		pid_t client;

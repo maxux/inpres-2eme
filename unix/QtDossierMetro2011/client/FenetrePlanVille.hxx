@@ -63,6 +63,7 @@
 			void TracePlan();
 			void TraceParcours(int Nb, QPainter &paint);
 			void TraceChemin(int Nb,int Chemin[], QPainter &paint);
+			void TraceStation(QPainter &paint);
 			
 			/* Fix QPainter */
 			void paintEvent(QPaintEvent *event);

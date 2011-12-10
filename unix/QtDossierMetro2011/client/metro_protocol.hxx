@@ -1,6 +1,8 @@
 #ifndef __METRO_PROTOCOL
 	#define __METRO_PROTOCOL
 	
+	#define METRO_MAX_STEP		32
+	
 	/* Communication Protocol */
 	typedef enum {
 		QRY_LOGIN		= 0x01,	// QRY for authenficate client
@@ -77,7 +79,7 @@
 	
 	typedef struct pathway_t {
 		int nbstation;
-		int step[32];
+		int step[METRO_MAX_STEP];
 		
 	} pathway_t;
 #endif

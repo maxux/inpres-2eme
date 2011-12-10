@@ -5,19 +5,16 @@
 #include <sys/ipc.h>
 #include <sys/msg.h>
 
-#define     CHEMIN
-
-#include "Commun.dat"
-#include "Donnee.dat"
-
 #include "chemin.h"
 #include "metro_protocol.h"
 #include "ipc_messages.h"
 #include "debug.h"
 
+metro_nodes_t nodes[METRO_MAX_STATION];
+
 global_t sys;
 
-int main(int argc, char*argv[]) {
+int main(void) {
 	int CheminSuivit[55];
 	int mkey_id;
 	ask_pathway_t ask;
@@ -27,7 +24,7 @@ int main(int argc, char*argv[]) {
 	/* System Global */
 	sys.mkey_id = &mkey_id;
 	
-	debugn("PTH: Chemin init...\n");
+	debugn("FRK: (DBG) Init...\n");
 
 	if((mkey_id = msgget(MESSAGE_KEY_ID, IPC_CREAT | 0666)) < 0) {
 		perror("msgget");
@@ -35,18 +32,31 @@ int main(int argc, char*argv[]) {
 	}
 	
 	/* Waiting data from control */
-	debug("PTH: Reading data...\n");
+	debug("FRK: (DBG) Reading data...\n");
 	read_message(&message);
 	
 	if(message.request != QRY_SEARCH_DATA) {
-		debugc("PTH: Invalid answer from server (%d)\n", message.request);
+		debugc("FRK: (DBG) Invalid answer from server (0x%x)\n", message.request);
 		return 1;
 	}
 	
 	/* Copy data */
 	memcpy(&ask, message.text, sizeof(ask));
 	
-	debug("PTH: Searching path from (%d) to (%d)...\n", ask.from, ask.to);
+	/* Downloading nodes list */
+	debug("FRK: (QRY) Nodes List\n");
+	if(!send_message(QRY_NODESLIST, (void*) "Wantz Nodes List", 1L, 0))
+		debugc("Cannot downloading nodes\n");
+	
+	read_message(&message);
+	
+	if(message.request == ACK_NODESLIST) {
+		printf("FRK: (ACK) Nodes List\n");
+		memcpy(nodes, message.text, sizeof(nodes));
+		
+	} else debugc("FRK: (ERR) Wrong opcode: 0x%x\n", message.request);
+	
+	debug("FRK: (DBG) Searching path from (%d) to (%d)...\n", ask.from, ask.to);
 	
 	/* Init pathway struct */
 	pathway.nbstation = 0;
@@ -62,7 +72,7 @@ int main(int argc, char*argv[]) {
 	AffChemin(&pathway);
 
 	/* Sending message */
-	debug("PTH: Sending data to client (%d)\n", ask.client);
+	debug("FRK: (DBG) Sending data to client (%d)\n", ask.client);
 	send_message(ACK_SEARCH, (void*) &pathway, ask.client, sizeof(pathway));
 	
 	exit(0);
@@ -72,7 +82,7 @@ int main(int argc, char*argv[]) {
 int Recherche(int NoeudCourant, int NoeudDestination, int TailleActuelle, int CheminSuivit[], int CheminOptimum[], int *TailleChemin) {
 	int rc, Mrc = 0, i;
 
-	if(Noeud[NoeudCourant].Visite)
+	if(nodes[NoeudCourant].visite)
 		return 0;
 		
 	if(NoeudCourant == NoeudDestination) {
@@ -85,12 +95,12 @@ int Recherche(int NoeudCourant, int NoeudDestination, int TailleActuelle, int Ch
 		return 0;
 	}
 	
-	Noeud[NoeudCourant].Visite = 1;
+	nodes[NoeudCourant].visite = 1;
 
 	i = 0;
-	while(i < 6 && Noeud[NoeudCourant].Suivant[i] != 0) {
-		CheminSuivit[TailleActuelle] = Noeud[NoeudCourant].Suivant[i];
-		rc = Recherche(Noeud[NoeudCourant].Suivant[i], NoeudDestination,TailleActuelle + 1, CheminSuivit,CheminOptimum,TailleChemin);
+	while(i < 6 && nodes[NoeudCourant].suivant[i] != 0) {
+		CheminSuivit[TailleActuelle] = nodes[NoeudCourant].suivant[i];
+		rc = Recherche(nodes[NoeudCourant].suivant[i], NoeudDestination,TailleActuelle + 1, CheminSuivit,CheminOptimum,TailleChemin);
 		
 		if(rc != 0)
 			Mrc = rc;
@@ -98,7 +108,7 @@ int Recherche(int NoeudCourant, int NoeudDestination, int TailleActuelle, int Ch
 		i++;
 	}
 	
-	Noeud[NoeudCourant].Visite = 0;
+	nodes[NoeudCourant].visite = 0;
 	
 	return Mrc;
 }
@@ -108,13 +118,13 @@ void AffChemin(pathway_t *pathway) {
 	char szBuffer[64] = {0};
 	char szBuffer1[64] = {0};
 
-	debug("PTH: Length: %d\n", pathway->nbstation);
+	debug("FRK: (DBG) Length: %d\n", pathway->nbstation);
 	
 	while(i < pathway->nbstation) {
 		sprintf(szBuffer1, "%d -> ", pathway->step[i++]);
 		strcat(szBuffer, szBuffer1);
 	}
 	
-	debug("PTH: Path: %s\n", szBuffer);
+	debug("FRK: (DBG) Path: %s\n", szBuffer);
 	return;
 }

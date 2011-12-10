@@ -1,0 +1,59 @@
+=head1 CONTENT
+
+B<control> - primary daemon working with IPC requests
+
+B<chemin>  - path finding process
+
+B<client>  - GUI independant client for control
+
+B<admin>   - manage control/clients in real time
+
+=head1 CLIENT SYNOPSIS
+
+B<client> clientname
+
+=head1  PROTOCOL
+
+The (full) IPC protocol used is describe in the B<metro_protocol.h> defined by an enum with defined values.
+
+Each protocol request got a prefix
+
+B<QRY>		query
+	
+B<ACK>		acknowledgement
+	
+B<ERR> 		critical error
+
+=head1 DEBUG MESSAGES
+
+Each debug message start with a prefix like B<QRY:>
+
+=head2 List of debug prefix
+
+B<THR>		Thread informations
+	
+B<DBG>		Debugging message
+	
+B<RAW> 		Raw Protocol message
+
+B<ERR>		Error
+
+B<QRY>		Got a Query Request
+
+B<ACK>		Got a Acknowledgement Request
+
+B<ADM>		Got a Administration Request
+
+B<OK >		End of a specific processing request
+
+B<FRK>		Fork Message
+
+When fork/thread use debug messages, use B<FRK/THR> prefix then put the true prefix type in brackets.
+
+=head2 Exemple
+
+THR: (QRY) Got a Query !
+
+=head1 AUTHOR
+
+Daniel Maxime
