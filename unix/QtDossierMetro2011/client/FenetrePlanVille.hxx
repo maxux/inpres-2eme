@@ -20,8 +20,15 @@
 	#define DRAW_PLAN		0x01
 	#define DRAW_PATH		0x02
 	
-	#define FIX_FRAME_X		50
-	#define FIX_FRAME_Y		40
+	#ifdef __sun
+		#define FIX_FRAME_X		0
+		#define FIX_FRAME_Y		0
+		#define PAINTEVENT_FIX_OUTPUT	framePlan
+	#else
+		#define FIX_FRAME_X		50
+		#define FIX_FRAME_Y		40
+		#define PAINTEVENT_FIX_OUTPUT	this
+	#endif
 	
 	#define METRO_MAX_LIGNE		20
 	#define METRO_MAX_STATION	40
@@ -53,7 +60,7 @@
 			QLabel* NomVille;
 			
 			void AffichePub(QTextEdit *T, const char* P);
-			void TracePlan(QFrame* F);
+			void TracePlan();
 			void TraceParcours(int Nb, QPainter &paint);
 			void TraceChemin(int Nb,int Chemin[], QPainter &paint);
 			
@@ -79,6 +86,8 @@
 		int *mkey_id;
 		char *shm;
 		char interface_ready;
+		char first_start;
+		int station_id;
 		
 	} global_t;
 #endif

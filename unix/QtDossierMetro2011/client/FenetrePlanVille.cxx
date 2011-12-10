@@ -30,9 +30,10 @@ global_t sys;
 station_t stations[METRO_MAX_STATION];
 ligne_t lignes[METRO_MAX_LIGNE];
 ligne_legacy_t legacy_lignes[METRO_MAX_LIGNE];
+pathway_t pathway;
 
 
-void TracePlan(QFrame* F);
+void TracePlan();
 void TraceParcours(QFrame *, int);
 void TraceChemin(QFrame *, int, int[]);
 
@@ -134,81 +135,89 @@ void FenetrePlanVille::languageChange() {
 }
 
 void FenetrePlanVille::Terminer() {
-	send_message(QRY_LOGOUT, (void*) "kthxbye");
+	send_message(QRY_LOGOUT, (void*) "kthxbye", 0);
 	exit(0);
 }
 
-void FenetrePlanVille::Selection() {
-	// Trace("Entree dans FenetrePlanVille::Selection()");
-	int Arrivee, rc, a;
-	char Buff[5];
-
-	/* strcpy(Buff, lineDestination->text());
-	Arrivee = atoi(Buff);
-	// en fait, rechercher le numero de la station.....
-
-	// TracePlan(framePlan);
-	MessageEnvoie.lType = 1L;
-	MessageEnvoie.request = SEARCH;
-	MessageEnvoie.pid = getpid();
-	// MessageEnvoie.message[0] = 1;
-	// MessageEnvoie.message[1] = Arrivee;
-	strcpy(MessageEnvoie.text, "Testing Message");
+int get_station_id(const char *name) {
+	int i = 1;
 	
-	int key_id = msgget(1342, IPC_CREAT | 0666);
-
-	if(msgsnd(key_id, &MessageEnvoie, sizeof(MessageEnvoie) - sizeof(long), 0)) {
-		fprintf(stderr, "Err. de msgsnd: %d %s", __LINE__, __FILE__);
-		exit(1);
+	while(stations[i].L != 0 && stations[i].C != 0) {
+		if(strcmp(stations[i].station, name) == 0)
+			return i;
+		
+		i++;
 	}
 	
-	if((rc = msgrcv(key_id, &MessageEnvoie, 200, getpid(), 0)) == -1) {
-		fprintf(stderr, "Err. de msgrcv: %d %s", __LINE__, __FILE__);
-		exit(1);
-	}
-	
-	int TailleChemin = (rc - sizeof(pid_t) - sizeof(int)) / sizeof(int);
-	// Trace("Taille du chemin : %d\n",TailleChemin);
-	// TraceChemin(framePlan, TailleChemin, MessageEnvoie.text);
-	a = 1;
-	*/
-	
-	int TailleChemin = (rc - sizeof(pid_t) - sizeof(int)) / sizeof(int);
-	
-	a = 1;
-	draw.need_repaint = true;
-	draw.todo = DRAW_PATH;
-	// TraceChemin(framePlan, TailleChemin, &a);
-	repaint();
-	
-	alarm(2);
-	
-	return;
+	return 0;
 }
 
-void FenetrePlanVille::AffichePub(QTextEdit *T, const char* P) {
+void FenetrePlanVille::Selection() {
+	ask_pathway_t ask;
+	message_t message;
+	
+	/* Empty Station */
+	if(lineDestination->text().length() == 0)
+		return;
+	
+	ask.client = getpid();
+	ask.from   = sys.station_id;
+	ask.to     = get_station_id(lineDestination->text().toStdString().c_str()); // LineEdit -> string -> char
+	
+	/* Invalid Station */
+	if(ask.to == 0)
+		return;
+	
+	/* Requesting */
+	debug("Searching path from %d to %d\n", ask.from, ask.to);
+	send_message(QRY_SEARCH, (void*) &ask, sizeof(ask));
+	
+	/* Waiting response */
+	read_message(&message);
+	
+	if(message.request == ACK_SEARCH) {
+		memcpy(&pathway, message.text, sizeof(pathway));
+		
+		/* Repainting */
+		draw.need_repaint = true;
+		draw.todo = DRAW_PATH;
+		repaint();
+		
+	} else debugc("ERR: Invalid answer from server: %d\n", message.request);
+}
+
+void FenetrePlanVille::AffichePub(QTextEdit *T, const char *P) {
 	T->setText(P);
 }
 
 void FenetrePlanVille::paintEvent(QPaintEvent *event) {
-	QPainter paint(this);
-	int i, tmp[] = {1, 3, 2, 4, 5};
+	QPainter paint(PAINTEVENT_FIX_OUTPUT);
+	int i;
+	
+	if(sys.first_start && sys.interface_ready) {
+		/* Redraw map if it's the first time */
+		sys.first_start = 0;
+		
+		AffichePub(textInformation, " ");		
+		TracePlan();
+	}
 	
 	if(draw.need_repaint) {
-		printf("NEED REPAINT\n");
-		
-		
+		event = NULL;
+			
 		switch(draw.todo) {
 			case DRAW_PLAN:
+				debug("Drawing map\n");
 				for(i = 0; i < 6; i++)
 					TraceParcours(i, paint);
 			break;
 			
 			case DRAW_PATH:
+				debug("Drawing map with lines\n");
 				for(i = 0; i < 6; i++)
 					TraceParcours(i, paint);
 					
-				TraceChemin(5, tmp, paint);
+				TraceChemin(pathway.nbstation, pathway.step, paint);
 			break;
 		}
 		
@@ -216,7 +225,7 @@ void FenetrePlanVille::paintEvent(QPaintEvent *event) {
 	}
 }
 
-void FenetrePlanVille::TracePlan(QFrame* F) {
+void FenetrePlanVille::TracePlan() {
 	/* Notify Redraw Event to redraw the map */
 	draw.need_repaint = true;
 	draw.todo = DRAW_PLAN;
@@ -229,7 +238,7 @@ void FenetrePlanVille::TraceParcours(int Nb, QPainter &paint) {
 	paint.setPen(lignes[Nb].couleur);
 	
 	while(lignes[Nb].position[i + 1].N) {
-		paint.drawLine(lignes[Nb].position[i].L + 40, lignes[Nb].position[i].C + 50, lignes[Nb].position[i+1].L + 40, lignes[Nb].position[i+1].C + 50);
+		paint.drawLine(lignes[Nb].position[i].L + FIX_FRAME_Y, lignes[Nb].position[i].C + FIX_FRAME_X, lignes[Nb].position[i+1].L + FIX_FRAME_Y, lignes[Nb].position[i+1].C + FIX_FRAME_X);
 		i++;
 	}
 	
@@ -237,49 +246,75 @@ void FenetrePlanVille::TraceParcours(int Nb, QPainter &paint) {
 	
 	i = 1;
 	while(i <= 34) {
-		paint.drawText(stations[i].L + 40, stations[i].C + 50, stations[i].station);
+		paint.drawText(stations[i].L + FIX_FRAME_Y, stations[i].C + FIX_FRAME_X, stations[i].station);
+		i++;
+	}
+}
+
+void find_xy_station(int station_id, int *x, int *y) {
+	int i = 0;
+	int j = 0;
+	
+	while(legacy_lignes[i].couleur != LCOLOR_EOF) {
+		printf("Searching station %d\n", station_id);
+		
+		for(j = 0; j < 15; j++) {
+			if(lignes[i].position[j].N == station_id) {
+				*x = lignes[i].position[j].L;
+				*y = lignes[i].position[j].C;
+				
+				return;
+			}
+		}
+		
 		i++;
 	}
 }
 
 void FenetrePlanVille::TraceChemin(int Nb, int Chemin[], QPainter &paint) {
-	int i = 0;
 	QPen pen;
+	int i = 0;
+	int x1, y1, x2, y2;
 	
 	pen.setWidth(5);
 	pen.setColor(Qt::red);
 	
 	paint.setPen(pen);
 	
-	while(i < Nb) {
+	while(i < Nb - 1) {
 		// Drawing lines
-		paint.drawLine(lignes[Chemin[i]].position[i].L + FIX_FRAME_Y, lignes[Chemin[i]].position[i].C + FIX_FRAME_X, lignes[Chemin[i]].position[i + 1].L + FIX_FRAME_Y, lignes[Chemin[i]].position[i + 1].C + FIX_FRAME_X);
+		find_xy_station(Chemin[i], &x1, &y1);
+		find_xy_station(Chemin[i + 1], &x2, &y2);
+		
+		paint.drawLine(x1 + FIX_FRAME_Y, y1 + FIX_FRAME_X, x2 + FIX_FRAME_Y, y2 + FIX_FRAME_X);
 		
 		// Drawing over text
 		paint.drawText(stations[Chemin[i]].L + FIX_FRAME_Y, stations[Chemin[i]].C + FIX_FRAME_X, stations[Chemin[i]].station);
 		
-		// Trace("%s",Donnee[Chemin[i]].Station);
 		i++;
 	}
 }
 
-void sig_handler(int signum) {
-	if(!sys.interface_ready)
-		return;
-		
+void sig_handler(int signum) {		
 	switch(signum) {
 		/* SIGPWR: Ping */
 		case SIGPWR:
-			send_message(ACK_PONG, (void*) "Pong !");
+			send_message(ACK_PONG, (void*) "Pong !", 0);
 		break;
 		
 		/* SIGUSR1: New ads */
 		case SIGUSR1:
+			if(!sys.interface_ready)
+				return;
+				
 			printf("SIGUSR1 intercepted\n");
 			sys.window->AffichePub(sys.window->textInformation, sys.shm);
 		break;
 		
 		case SIGUSR2:
+			if(!sys.interface_ready)
+				return;
+				
 			printf("SIGUSR2 intercepted\n");
 		break;
 		
@@ -287,8 +322,6 @@ void sig_handler(int signum) {
 			sys.window->Terminer();
 		break;
 	}
-	
-	// F1->TracePlan(F1->framePlan);
 }
 
 int signal_intercept(int signal, void (*function)(int)) {
@@ -349,6 +382,8 @@ void convert_legacy_lines(ligne_t *lines, ligne_legacy_t *legacy) {
 		i++;
 	}
 	
+	lines[i].couleur = Qt::transparent;
+	
 	debug("DBG: %d lines converted\n", i);
 }
 
@@ -362,8 +397,6 @@ int main(int argc, char *argv[]) {
 
 	char *cname;		/* Client Name */
 	
-	int rc;
-	
 	QApplication a(argc, argv);
 	
 	printf("Loading...\n");
@@ -371,6 +404,7 @@ int main(int argc, char *argv[]) {
 	/* Affecting Global Settings */
 	sys.mkey_id         = &mkey_id;
 	sys.interface_ready = 0;
+	sys.first_start     = 1;
 	
 	/* Intercept ALARM */
 	signal_intercept(SIGALRM, sig_handler);
@@ -396,10 +430,10 @@ int main(int argc, char *argv[]) {
 	if(argc > 1)
 		cname = argv[1];
 	else
-		cname = "Untitled Client";
+		cname = (char*) "Untitled Client";
 	
 	/* Requesting Login */
-	if(!send_message(QRY_LOGIN, (void*) cname)) {
+	if(!send_message(QRY_LOGIN, (void*) cname, 0)) {
 		debug("Cannot send message to server\n");
 		return 1;
 	}
@@ -447,7 +481,7 @@ int main(int argc, char *argv[]) {
 	F1->NomVille->setText(cname);
 	
 	/* Requesting Path List */
-	if(!send_message(QRY_PATHLIST, (void*) "Wantz Path List"))
+	if(!send_message(QRY_PATHLIST, (void*) "Wantz Path List", 0))
 		debugc("Cannot downloading map\n");
 	
 	printf("QRY: Path List\n");
@@ -459,9 +493,12 @@ int main(int argc, char *argv[]) {
 		
 	} else debugc("Wrong opcode: %d\n", message.request);
 	
+	/* Finding our station id */
+	sys.station_id = get_station_id(cname);
+	debug("DBG: We are id #%d\n", sys.station_id);
 	
 	/* Requesting Lignes List */
-	if(!send_message(QRY_LINESLIST, (void*) "Wantz Lines List"))
+	if(!send_message(QRY_LINESLIST, (void*) "Wantz Lines List", 0))
 		debugc("Cannot downloading lignes\n");
 	
 	printf("QRY: Lignes List\n");
@@ -478,9 +515,7 @@ int main(int argc, char *argv[]) {
 		
 	} else debugc("Wrong opcode: %d\n", message.request);
 	
-	/* Writing Map */
-	F1->TracePlan(F1->framePlan);
-	
+	/* Writing Map */	
 	printf("Drawing GUI Interface\n");
 	
 	/* Let's GUI working */

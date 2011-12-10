@@ -1,10 +1,10 @@
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include <sys/msg.h>
 
-#include "control.h"
+#include "chemin.h"
 #include "ipc_messages.h"
 #include "debug.h"
 
@@ -17,17 +17,12 @@ int send_message(metro_protocol request, void *data, pid_t pid, size_t bsize) {
 	message.request = request;
 	message.pid     = getpid();
 	
-	/* Checking if it's a string or a binary data */
-	if(bsize > 0) {
-		/* Avoid memory over flow */
-		if(bsize > sizeof(message.text))
-			bsize = sizeof(message.text);
-		
-		/* Copy binary data */
-		memcpy(message.text, data, bsize);
-		
-	} else strcpy(message.text, (char*) data);
-		
+	/* Avoid memory over flow */
+	if(bsize > sizeof(message.text))
+		bsize = sizeof(message.text);
+	
+	/* Copy binary data */
+	memcpy(message.text, data, bsize);
 	
 	if(msgsnd(*(sys.mkey_id), &message, sizeof(message) - sizeof(long), 0)) {
 		perror("msgsnd");
@@ -35,4 +30,15 @@ int send_message(metro_protocol request, void *data, pid_t pid, size_t bsize) {
 	}
 	
 	return 1;
+}
+
+int read_message(message_t *destination) {
+	int rc;
+	
+	if((rc = msgrcv(*(sys.mkey_id), destination, sizeof(message_t), getpid(), 0)) == -1) {
+		perror("msgrcv:");
+		exit(1);
+	}
+	
+	return rc;
 }

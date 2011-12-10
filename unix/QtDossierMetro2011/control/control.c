@@ -27,6 +27,7 @@ int main(void) {
 	char *shm;		/* Shared Memory Pointer */
 	int i;			/* Counter */
 	
+	pid_t forking;		/* PID of the fork (chemin) */
 	pthread_t ads, ping;	/* Threads for multiple processing */
 	
 	client_table_t **client_head, *clients, *new_client = NULL, *client_temp = NULL;
@@ -104,7 +105,7 @@ int main(void) {
 			return 1;
 		}
 		
-		debugn("RAW: New Message from PID: %d (Type: 0x%02x) :: %s\n", message.pid, message.request, message.text);
+		debugn("RAW: New Message from PID: %d (Type: 0x%02x) :: %s\n", (int) message.pid, message.request, message.text);
 		
 		switch(message.request) {
 			case ACK_PONG:
@@ -160,6 +161,9 @@ int main(void) {
 				
 				send_message(ACK_LOGIN, (void*) "Welcome :)", message.pid, 0);
 				
+				/* Sending first ping */
+				kill(message.pid, SIGPWR);
+				
 				/* if(leader_pid == 0)
 					leader_pid = message.pid;
 				
@@ -214,7 +218,23 @@ int main(void) {
 			
 			case QRY_SEARCH:
 				debug("QRY: New PathFinding...\n");
-				/* Fucking fork(); */
+				debug("FRK: Forking chemin...\n");
+				
+				forking = fork();
+				
+				if(forking == 0) {
+					/* We are the child */
+					execl("../chemin/chemin", "../chemin/chemin", (char*) NULL);
+					perror("execl");
+					exit(0);
+					
+				} else if(forking > 0) {
+					debug("FRK: Chemin forked, sending data...\n")					
+					send_message(QRY_SEARCH_DATA, (void*) message.text, forking, sizeof(ask_pathway_t));
+					
+				} else debugc("FKR: Failed\n");
+				
+				// send_message(ACK_SEARCH, (void*) &pathway, message.pid, sizeof(pathway));
 			break;
 			
 			case QRY_SHUTDOWN:
