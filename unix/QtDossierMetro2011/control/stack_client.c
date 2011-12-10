@@ -27,7 +27,7 @@ void keep_alive() {
 		}
 		
 		/* Sending "Ping" */
-		stack_sending_signal(backup, SIGPWR);
+		stack_sending_signal(backup, SIGPWR, 1);
 		
 		/* Waiting 2 seconds */
 		usleep(200000);
@@ -111,8 +111,13 @@ int unstack_client(client_table_t **head, pid_t pid) {
 	return 0;
 }
 
-void stack_sending_signal(client_table_t *client, int signal) {
+void stack_sending_signal(client_table_t *client, int signal, int admin) {
 	while(client != NULL) {
+		if(!admin && client->admin) {
+			client = client->next;
+			continue;
+		}
+			
 		debug("STK: Sending signal %d to %d\n", signal, client->pid);
 		
 		if(kill(client->pid, 0) != -1)
@@ -139,6 +144,21 @@ client_table_t * stack_search_station(client_table_t *client, char *station_name
 	while(client != NULL) {
 		if(strcmp(client->name, station_name) == 0)
 			return client;
+		
+		client = client->next;
+	}
+	
+	return NULL;
+}
+
+client_table_t * stack_check_admin(client_table_t *client, pid_t pid) {
+	while(client != NULL) {
+		if(client->pid == pid) {
+			if(client->admin)
+				return client;
+			else
+				return NULL;
+		}
 		
 		client = client->next;
 	}

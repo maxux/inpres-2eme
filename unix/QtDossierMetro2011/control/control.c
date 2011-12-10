@@ -153,6 +153,7 @@ int main(void) {
 					
 				new_client->pid   = message.pid;
 				new_client->alive = 1;
+				new_client->admin = 0;
 				new_client->next  = NULL;
 				strncpy(new_client->name, message.text, sizeof(new_client->name));
 				
@@ -184,6 +185,22 @@ int main(void) {
 			case QRY_ADMIN_LOGIN:
 				if(strcmp(message.text, ADMIN_PASSWORD) == 0) {
 					debugn("ADM: Admin connected from pid %d\n", message.pid);
+					
+					new_client = (client_table_t *) malloc(sizeof(client_table_t));
+					if(!new_client) {
+						debugc("ERR: Allocation failed. Client skipped\n");
+						break;
+					}
+						
+					new_client->pid   = message.pid;
+					new_client->alive = 1;
+					new_client->admin = 1;
+					new_client->next  = NULL;
+					strncpy(new_client->name, "ADMIN", sizeof(new_client->name));
+					
+					stack_client(client_head, new_client);
+					stack_client_print(clients);
+					
 					send_message(ACK_ADMIN_LOGIN, (void*) "Access granted", message.pid, 0);
 					
 				} else {
@@ -240,9 +257,37 @@ int main(void) {
 			break;
 			
 			case QRY_SHUTDOWN:
-				debug("QRY: Shutting down...\n");
-				stopping_server();
+				debug("QRY: Shutting down server\n");
+				
+				if(stack_check_admin(clients, message.pid)) {
+					debugn("ADM: Shutting down request validated !\n");
+					send_message(ACK_SHUTDOWN, (void*) "Okay master", message.pid, 0);
+					stopping_server();
+					
+				} else {
+					debugc("ERR: Admin Request from a not grant station ! (Client: %d)\n", (int) message.pid)
+					send_message(ERR_DENIED, (void*) "WTF ?!", message.pid, 0);
+				}
+				
 				return 2;
+			break;
+			
+			case QRY_ADMIN_MESSAGE:
+				debug("QRY: Admin Message\n");
+				
+				if(stack_check_admin(clients, message.pid)) {
+					debugn("ADM: Sending message...\n");
+					send_message(ACK_ADMIN_MESSAGE, (void*) "Okay master", message.pid, 0);
+					
+					strcpy(shm, message.text);
+					
+					stack_sending_signal(clients, SIGUSR2, 0);
+					
+					
+				} else {
+					debugc("ERR: Admin Request from a not grant station ! (Client: %d)\n", (int) message.pid)
+					send_message(ERR_DENIED, (void*) "Permission denied", message.pid, 0);
+				}
 			break;
 			
 			default:

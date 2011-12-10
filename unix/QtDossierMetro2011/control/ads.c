@@ -19,7 +19,7 @@ void show_ads() {
 			// printf("Sending ads...\n");
 			
 			strcpy(sys.shm, messages[i]);
-			stack_sending_signal(*(sys.clients_head), SIGUSR1);
+			stack_sending_signal(*(sys.clients_head), SIGUSR1, 0);
 			usleep(3000000);
 		}
 	}

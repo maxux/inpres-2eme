@@ -347,8 +347,9 @@ void sig_handler(int signum) {
 		case SIGUSR2:
 			if(!sys.interface_ready)
 				return;
-				
+			
 			printf("SIGUSR2 intercepted\n");
+			sys.window->AffichePub(sys.window->textInformation, sys.shm);
 		break;
 		
 		case SIGINT:

@@ -12,7 +12,9 @@
 		ACK_LOGIN		= 0x0C,	// ACK for login
 		
 		QRY_LOGOUT		= 0x02,	// QRY for unauthentificate client
+		
 		QRY_SHUTDOWN		= 0x04,	// QRY for daemon's shutdown		
+		ACK_SHUTDOWN		= 0x14,	// ACK shutdown confirmed
 		
 		QRY_SEARCH		= 0x03,	// QRY for path finding
 		ACK_SEARCH		= 0x10,	// ACK for path finding
@@ -35,7 +37,10 @@
 		ERR_DENIED		= 0x0D,	// ERR from server. Client is denied.
 		
 		QRY_ADMIN_LOGIN		= 0x0E,	// QRY for admin remote access
-		ACK_ADMIN_LOGIN		= 0x0F	// ACK for admin remote access
+		ACK_ADMIN_LOGIN		= 0x0F,	// ACK for admin remote access
+		
+		QRY_ADMIN_MESSAGE	= 0x15,	// QRY send global admin message
+		ACK_ADMIN_MESSAGE	= 0x16	// ACK message global sent
 		
 	} metro_protocol;
 	
