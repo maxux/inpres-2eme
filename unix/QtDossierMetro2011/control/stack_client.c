@@ -38,7 +38,7 @@ void keep_alive() {
 		/* Checking who if offline */
 		while(client != NULL) {
 			if(!client->alive) {
-				debugc("ERR: Client %d ping timeout\n", client->pid);
+				debugc("ERR: Client %d ping timeout\n", (int) client->pid);
 				unstack_client(sys.clients_head, client->pid);
 			}
 				
@@ -73,7 +73,7 @@ void stack_client_print(client_table_t *head) {
 	
 	/* Loop Writing */
 	while(head != NULL) {
-		debug("STK:  + Name: %-20s (PID: %d)\n", head->name, head->pid);
+		debug("STK:  + Name: %-20s (PID: %d)\n", head->name, (int) head->pid);
 		head = head->next;
 	}
 }
@@ -118,12 +118,12 @@ void stack_sending_signal(client_table_t *client, int signal, int admin) {
 			continue;
 		}
 			
-		debug("STK: Sending signal %d to %d\n", signal, client->pid);
+		debug("STK: Sending signal %d to %d\n", signal, (int) client->pid);
 		
 		if(kill(client->pid, 0) != -1)
 			kill(client->pid, signal);
 			
-		else debugc("ERR: Client %d seems to be dead...\n", client->pid);
+		else debugc("ERR: Client %d seems to be dead...\n", (int) client->pid);
 		
 		client = client->next;
 	}

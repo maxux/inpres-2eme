@@ -78,7 +78,7 @@ int main(void) {
 	strcpy(shm, "Advertissment");
 		
 	/* Init Process Group */
-	debug("DBG: Control PID: %d\n", getpid());
+	debug("DBG: Control PID: %d\n", (int) getpid());
 	
 	/* Starting threads */
 	debug("THR: Threading ads processing...\n");
@@ -132,7 +132,7 @@ int main(void) {
 				/* Client denied */
 				if(i > 0) {
 					send_message(ERR_DENIED, (void*) "Access denied", message.pid, 0);
-					debugc("ERR: Request station not allowed. Pid %d skipped.\n", message.pid);
+					debugc("ERR: Request station not allowed. Pid %d skipped.\n", (int) message.pid);
 					break;
 				}
 				
@@ -140,7 +140,7 @@ int main(void) {
 				client_temp = stack_search_station(clients, message.text);
 				if(client_temp != NULL) {
 					send_message(ERR_DENIED, (void*) "Station already registred", message.pid, 0);
-					debugc("ERR: A second instance of station claimed by %d. Original is %d.\n", message.pid, client_temp->pid);
+					debugc("ERR: A second instance of station claimed by %d. Original is %d.\n", (int) message.pid, (int) client_temp->pid);
 					break;
 				}
 				
@@ -173,7 +173,7 @@ int main(void) {
 			break;
 			
 			case QRY_LOGOUT:
-				debug("QRY: User logout: %d\n", message.pid);
+				debug("QRY: User logout: %d\n", (int) message.pid);
 				/* TODO: Check validity */
 				
 				if(unstack_client(client_head, message.pid) != 1)
@@ -184,7 +184,7 @@ int main(void) {
 			
 			case QRY_ADMIN_LOGIN:
 				if(strcmp(message.text, ADMIN_PASSWORD) == 0) {
-					debugn("ADM: Admin connected from pid %d\n", message.pid);
+					debugn("ADM: Admin connected from pid %d\n", (int) message.pid);
 					
 					new_client = (client_table_t *) malloc(sizeof(client_table_t));
 					if(!new_client) {
@@ -204,13 +204,13 @@ int main(void) {
 					send_message(ACK_ADMIN_LOGIN, (void*) "Access granted", message.pid, 0);
 					
 				} else {
-					debugc("ADM: Admin request failed from pid %d\n", message.pid);
+					debugc("ADM: Admin request failed from pid %d\n", (int) message.pid);
 					send_message(ERR_DENIED, (void*) "Wrong password", message.pid, 0);
 				}
 			break;
 			
 			case QRY_PATHLIST:
-				debug("QRY: Path List Request (%d)\n", message.pid);
+				debug("QRY: Path List Request (%d)\n", (int) message.pid);
 				
 				if(!send_message(ACK_PATHLIST, stations, message.pid, sizeof(stations)))
 					debugc("Cannot send map\n");
@@ -220,7 +220,7 @@ int main(void) {
 			break;
 			
 			case QRY_LINESLIST:
-				debug("QRY: Lines List Request (%d)\n", message.pid);
+				debug("QRY: Lines List Request (%d)\n", (int) message.pid);
 				
 				if(!send_message(ACK_LINESLIST, lignes, message.pid, sizeof(lignes)))
 					debugc("Cannot send lines\n");
@@ -229,7 +229,7 @@ int main(void) {
 			break;
 			
 			case QRY_NODESLIST:
-				debug("QRY: Nodes List Request (%d)\n", message.pid);
+				debug("QRY: Nodes List Request (%d)\n", (int) message.pid);
 				
 				if(!send_message(ACK_NODESLIST, nodes, message.pid, sizeof(nodes)))
 					debugc("Cannot send nodes\n");

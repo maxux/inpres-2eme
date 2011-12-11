@@ -72,7 +72,7 @@ int main(void) {
 	AffChemin(&pathway);
 
 	/* Sending message */
-	debug("FRK: (DBG) Sending data to client (%d)\n", ask.client);
+	debug("FRK: (DBG) Sending data to client (%d)\n", (int) ask.client);
 	send_message(ACK_SEARCH, (void*) &pathway, ask.client, sizeof(pathway));
 	
 	exit(0);

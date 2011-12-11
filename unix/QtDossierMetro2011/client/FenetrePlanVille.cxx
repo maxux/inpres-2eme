@@ -212,7 +212,7 @@ void FenetrePlanVille::paintEvent(QPaintEvent *event) {
 		event = NULL;
 		
 		/* Qt3 Fix */
-		framePlan->erase();
+		framePlan->erase(2, 2, 546, 296);
 
 		switch(draw.todo) {
 			case DRAW_PLAN:
@@ -463,7 +463,7 @@ void convert_legacy_lines(ligne_t *lines, ligne_legacy_t *legacy) {
 		i++;
 	}
 	
-	lines[i].couleur = Qt::transparent;
+	lines[i].couleur = Qt::color0;
 	
 	debug("DBG: %d lines converted\n", i);
 }
