@@ -162,7 +162,13 @@ void FenetrePlanVille::Selection() {
 	
 	ask.client = getpid();
 	ask.from   = sys.station_id;
-	ask.to     = get_station_id(lineDestination->text().toStdString().c_str()); // LineEdit -> string -> char
+	
+	/* Qt3 Fix */
+	#ifdef __sun
+		ask.to     = get_station_id(lineDestination->text().ascii()); // LineEdit -> char
+	#else
+		ask.to     = get_station_id(lineDestination->text().toStdString().c_str()); // LineEdit -> string -> char
+	#endif
 	
 	/* Invalid Station */
 	if(ask.to == 0)
@@ -204,6 +210,9 @@ void FenetrePlanVille::paintEvent(QPaintEvent *event) {
 	
 	if(draw.need_repaint) {
 		event = NULL;
+		
+		/* Qt3 Fix */
+		framePlan->erase();
 
 		switch(draw.todo) {
 			case DRAW_PLAN:
@@ -259,7 +268,7 @@ void FenetrePlanVille::TraceParcours(int Nb, QPainter &paint) {
 }
 
 void FenetrePlanVille::TraceStation(QPainter &paint) {
-	QRectF source(0.0, 0.0, 22.0, 22.0);
+	// QRectF source(0.0, 0.0, 22.0, 22.0);
 	QPen pen;
 	int i = 1;
 	
@@ -268,10 +277,10 @@ void FenetrePlanVille::TraceStation(QPainter &paint) {
 			/* Draw "Disabled" */
 			printf("STATION %d IS DISABLED\n", i);
 			
-			QRectF target(stations[i].L + FIX_FRAME_Y - 22, stations[i].C + FIX_FRAME_X - 22, 22.0, 22.0);
-			QImage image("edit-delete.png");
+			// QRectF target(stations[i].L + FIX_FRAME_Y - 22, stations[i].C + FIX_FRAME_X - 22, 22.0, 22.0);
+			// QImage image("edit-delete.png");
 				
-			paint.drawImage(target, image, source);
+			// paint.drawImage(target, image, source);
 		}
 		
 		/* Avoid overdraw */
