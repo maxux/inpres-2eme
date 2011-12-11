@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <termios.h>
 #include <unistd.h>
 #include <sys/ipc.h>
@@ -99,6 +100,91 @@ int signal_intercept(int signal, void (*function)(int)) {
 	return ret;
 }
 
+int download_data(station_t *stations) {
+	message_t message;
+	
+	/* Downloading stations */
+	debug("QRY: Stations List\n");
+	send_message(QRY_PATHLIST, (void*) "Wantz Stations");
+	read_message(&message);
+	
+	if(message.request != ACK_PATHLIST) {
+		debugc("ERR: Invalid answer from server (0x%x).\n", message.request);
+		return 1;
+		
+	} else memcpy(stations, message.text, sizeof(station_t) * METRO_MAX_STATION);
+	
+	return 0;
+}
+
+int disable_station(void) {
+	message_t message;
+	station_t stations[METRO_MAX_STATION];
+	char ask[64];
+	int i = 1, id;
+	
+	if(download_data(stations))
+		return 0;
+	
+	printf("Stations actives: \n");
+	while(stations[i].L && stations[i].C) {
+		if(stations[i].enabled)
+			printf(" %d) %s\n", i, stations[i].station);
+		
+		i++;
+	}
+	
+	printf("Désactiver (id): ");
+	while(fgets(ask, sizeof(ask), stdin) == NULL);
+	id = atoi(ask);
+	
+	debug("ADM: Disabling Station #%d...\n", id);
+	
+	send_message(QRY_DISABLE_STATION, (void*) &id);
+	read_message(&message);
+	
+	if(message.request != ACK_DISABLE_STATION) {
+		debugc("ERR: Wrong response from control (0x%x)\n", message.request);
+		
+	} else debug("ADM: Station disabled !\n");
+	
+	return 0;
+}
+
+int enable_station(void) {
+	message_t message;
+	station_t stations[METRO_MAX_STATION];
+	char ask[64];
+	int i = 1, id;
+	
+	if(download_data(stations))
+		return 0;
+	
+	printf("Stations innactives: \n");
+	while(stations[i].L && stations[i].C) {
+		if(!stations[i].enabled)
+			printf(" %d) %s\n", i, stations[i].station);
+		
+		i++;
+	}
+	
+	printf("Activer (id): ");
+	while(fgets(ask, sizeof(ask), stdin) == NULL);
+	id = atoi(ask);
+	
+	debug("ADM: Enabling Station #%d...\n", id);
+	
+	send_message(QRY_ENABLE_STATION, (void*) &id);
+	read_message(&message);
+	
+	if(message.request != ACK_ENABLE_STATION) {
+		debugc("ERR: Wrong response from control (0x%x)\n", message.request);
+		
+	} else debug("ADM: Station enabled !\n");
+	
+	return 0;
+}
+
 int admin_message(void) {
 	char msg[256];
 	message_t message;
@@ -152,6 +238,8 @@ int main(void) {
 	
 	menu = menu_create("Administration Dossier Unix 2011 - Menu Principal", 9);
 	menu_append(menu, "Message administrateur", 1, admin_message, NULL);
+	menu_append(menu, "Désactiver une station", 2, disable_station, NULL);
+	menu_append(menu, "Activer une station", 3, enable_station, NULL);
 	menu_append(menu, "Shutdown Control", 8, shutdown_control, NULL);
 	menu_append(menu, "Quitter l'administration", 9, NULL, NULL);
 	

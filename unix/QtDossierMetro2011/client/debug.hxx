@@ -21,6 +21,10 @@
 				fprintf(stderr, COLOR_NONE); }
 	
 	/* Setting Colors */
+	/* Info Message */
+	#define debugn(...)	{ fprintf(stderr, COLOR_BLUE); \
+				__debug(__VA_ARGS__); }
+				
 	/* Classic Debug */
 	#define debug(...)	{ fprintf(stderr, COLOR_GREY); \
 				__debug(__VA_ARGS__); }

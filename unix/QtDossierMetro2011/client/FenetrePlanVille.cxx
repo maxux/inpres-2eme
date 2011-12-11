@@ -259,17 +259,34 @@ void FenetrePlanVille::TraceParcours(int Nb, QPainter &paint) {
 }
 
 void FenetrePlanVille::TraceStation(QPainter &paint) {
+	QRectF source(0.0, 0.0, 22.0, 22.0);
+	QPen pen;
 	int i = 1;
 	
-	while(i <= 34) {
+	while(stations[i].L && stations[i].C) {
+		if(!stations[i].enabled) {
+			/* Draw "Disabled" */
+			printf("STATION %d IS DISABLED\n", i);
+			
+			QRectF target(stations[i].L + FIX_FRAME_Y - 22, stations[i].C + FIX_FRAME_X - 22, 22.0, 22.0);
+			QImage image("edit-delete.png");
+				
+			paint.drawImage(target, image, source);
+		}
+		
 		/* Avoid overdraw */
 		if(!on_pathway(i)) {
-			if(i == sys.station_id)
+			pen.setWidth(1);
+			paint.setPen(pen);
+			
+			if(i == sys.station_id) {
 				paint.setPen(Qt::blue);
-			else
-				paint.setPen(Qt::black);
+				paint.drawText(stations[i].L + FIX_FRAME_Y, stations[i].C + FIX_FRAME_X, stations[i].station);
 				
-			paint.drawText(stations[i].L + FIX_FRAME_Y, stations[i].C + FIX_FRAME_X, stations[i].station);
+			} else {
+				paint.setPen(Qt::black);
+				paint.drawText(stations[i].L + FIX_FRAME_Y, stations[i].C + FIX_FRAME_X, stations[i].station);
+			}
 		}
 		
 		i++;
@@ -328,7 +345,9 @@ void FenetrePlanVille::TraceChemin(int Nb, int Chemin[], QPainter &paint) {
 	}
 }
 
-void sig_handler(int signum) {		
+void sig_handler(int signum) {
+	message_t message;
+	
 	switch(signum) {
 		/* SIGPWR: Ping */
 		case SIGPWR:
@@ -350,6 +369,25 @@ void sig_handler(int signum) {
 			
 			printf("SIGUSR2 intercepted\n");
 			sys.window->AffichePub(sys.window->textInformation, sys.shm);
+		break;
+		
+		case SIGWINCH:
+			if(!sys.interface_ready)
+				return;
+			
+			send_message(QRY_PATHLIST, (void*) "Ask for Redraw", 0);
+			read_message(&message);
+			
+			if(message.request == ACK_PATHLIST) {
+				debug("ACK: Path List\n");
+				memcpy(stations, message.text, sizeof(stations));
+				
+				/* Reset pathway to null */
+				memset(&pathway, 0x0, sizeof(pathway));
+				
+				sys.window->TracePlan();
+				
+			} else debugc("Wrong opcode: %d\n", message.request);
 		break;
 		
 		case SIGINT:
@@ -433,7 +471,7 @@ int main(int argc, char *argv[]) {
 	
 	QApplication a(argc, argv);
 	
-	printf("Loading...\n");
+	debugn("Loading...\n");
 	
 	/* Affecting Global Settings */
 	sys.mkey_id         = &mkey_id;
@@ -454,6 +492,9 @@ int main(int argc, char *argv[]) {
 	
 	/* Intercept SIGINT: Closing */
 	signal_intercept(SIGINT, sig_handler);
+
+	/* Intercept SIGWINCH: Refresh map */
+	signal_intercept(SIGWINCH, sig_handler);
 	
 	if((mkey_id = msgget(MESSAGE_KEY_ID, IPC_CREAT | 0666)) < 0) {
 		perror("msgget");
@@ -505,7 +546,7 @@ int main(int argc, char *argv[]) {
 	memset(&pathway, 0x0, sizeof(pathway));
 	
 	/* DEBUG: shm content */
-	printf("DEBUG: <%s>\n", shm);
+	debug("DEBUG: <%s>\n", shm);
 
 	/* Building GUI */
 	F1 = new FenetrePlanVille();
@@ -521,11 +562,11 @@ int main(int argc, char *argv[]) {
 	if(!send_message(QRY_PATHLIST, (void*) "Wantz Path List", 0))
 		debugc("Cannot downloading map\n");
 	
-	printf("QRY: Path List\n");
+	debug("QRY: Path List\n");
 	read_message(&message);
 	
 	if(message.request == ACK_PATHLIST) {
-		printf("ACK: Path List\n");
+		debug("ACK: Path List\n");
 		memcpy(stations, message.text, sizeof(stations));
 		
 	} else debugc("Wrong opcode: %d\n", message.request);
@@ -538,11 +579,11 @@ int main(int argc, char *argv[]) {
 	if(!send_message(QRY_LINESLIST, (void*) "Wantz Lines List", 0))
 		debugc("Cannot downloading lignes\n");
 	
-	printf("QRY: Lignes List\n");
+	debug("QRY: Lignes List\n");
 	read_message(&message);
 	
 	if(message.request == ACK_LINESLIST) {
-		printf("ACK: Ligne List\n");
+		debug("ACK: Ligne List\n");
 		
 		/* Copy Data */
 		memcpy(legacy_lignes, message.text, sizeof(legacy_lignes));
@@ -553,7 +594,7 @@ int main(int argc, char *argv[]) {
 	} else debugc("Wrong opcode: %d\n", message.request);
 	
 	/* Writing Map */	
-	printf("Drawing GUI Interface\n");
+	debugn("Drawing GUI Interface\n");
 	
 	/* Let's GUI working */
 	sys.interface_ready = 1;

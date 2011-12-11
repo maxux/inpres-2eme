@@ -25,7 +25,7 @@ int main(void) {
 	int message_len;	
 	// pid_t leader_pid;	/* Group Process leader pid */
 	char *shm;		/* Shared Memory Pointer */
-	int i;			/* Counter */
+	int i, id;		/* Counter, station id (admin) */
 	
 	pid_t forking;		/* PID of the fork (chemin) */
 	pthread_t ads, ping;	/* Threads for multiple processing */
@@ -283,6 +283,46 @@ int main(void) {
 					
 					stack_sending_signal(clients, SIGUSR2, 0);
 					
+					
+				} else {
+					debugc("ERR: Admin Request from a not grant station ! (Client: %d)\n", (int) message.pid)
+					send_message(ERR_DENIED, (void*) "Permission denied", message.pid, 0);
+				}
+			break;
+			
+			case QRY_DISABLE_STATION:
+				debug("QRY: Disable Station\n");
+				
+				if(stack_check_admin(clients, message.pid)) {
+					memcpy(&id, message.text, sizeof(id));
+					
+					debug("QRY: Disabling Station #%d...\n", id);
+					nodes[id].visite     = -1;
+					stations[id].enabled = 0;
+					
+					send_message(ACK_DISABLE_STATION, (void*) "Okay", message.pid, 0);
+					
+					stack_sending_signal(clients, SIGWINCH, 0);
+					
+				} else {
+					debugc("ERR: Admin Request from a not grant station ! (Client: %d)\n", (int) message.pid)
+					send_message(ERR_DENIED, (void*) "Permission denied", message.pid, 0);
+				}
+			break;
+			
+			case QRY_ENABLE_STATION:
+				debug("QRY: ENable Station\n");
+				
+				if(stack_check_admin(clients, message.pid)) {
+					memcpy(&id, message.text, sizeof(id));
+					
+					debug("QRY: Enabling Station #%d...\n", id);
+					nodes[id].visite     = 0;
+					stations[id].enabled = 1;
+					
+					send_message(ACK_ENABLE_STATION, (void*) "Okay", message.pid, 0);
+					
+					stack_sending_signal(clients, SIGWINCH, 0);
 					
 				} else {
 					debugc("ERR: Admin Request from a not grant station ! (Client: %d)\n", (int) message.pid)

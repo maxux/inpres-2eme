@@ -1,6 +1,8 @@
 #ifndef __METRO_PROTOCOL
 	#define __METRO_PROTOCOL
 	
+	#define METRO_MAX_STATION	40
+	
 	/* Communication Protocol */
 	typedef enum {
 		QRY_LOGIN		= 0x01,	// QRY for authenficate client
@@ -35,8 +37,29 @@
 		ACK_ADMIN_LOGIN		= 0x0F,	// ACK for admin remote access
 		
 		QRY_ADMIN_MESSAGE	= 0x15,	// QRY send global admin message
-		ACK_ADMIN_MESSAGE	= 0x16	// ACK message global sent
+		ACK_ADMIN_MESSAGE	= 0x16,	// ACK message global sent
+		
+		QRY_DISABLE_STATION	= 0x17,	// QRY disable station node visite
+		ACK_DISABLE_STATION	= 0x18,	// ACK if station disabled
+		
+		QRY_ENABLE_STATION	= 0x19,	// QRT enable station node visite
+		ACK_ENABLE_STATION	= 0x1A	// ACK if station enabled
 		
 	} metro_protocol;
+	
+	/* Stations List */
+	typedef struct station_t {
+		char station[20];	/* Nom de la station */
+		int L; 	/* Ligne */
+		int C;	/* Colonne */
+		int enabled;
+		
+	} station_t;
+	
+	/* typedef struct {
+		int visite;
+		int suivant[6];
+		
+	} metro_nodes_t; */
 #endif
 

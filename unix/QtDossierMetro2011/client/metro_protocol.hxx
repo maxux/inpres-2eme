@@ -46,6 +46,7 @@
 		char station[20];	/* Nom de la station */
 		int L; 	/* Ligne */
 		int C;	/* Colonne */
+		int enabled;
 		
 	} station_t;
 	
