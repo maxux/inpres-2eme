@@ -4,6 +4,8 @@
 #include <sys/ipc.h>
 #include <sys/msg.h>
 #include <sys/shm.h>
+#include <errno.h>
+#include <sys/wait.h>
 #include <stdlib.h>
 #include <string.h>
 #include <pthread.h>
@@ -45,6 +47,8 @@ int main(void) {
 	
 	/* Intercepting Signals */
 	signal_intercept(SIGINT, sighandler);
+	
+	signal_intercept(SIGCHLD, sighandler);
 	
 	/* Creating Message Queue */
 	debug("DBG: Creating Message Queue\n");
@@ -101,7 +105,12 @@ int main(void) {
 		 */
 		message_len = msgrcv(mkey_id, (struct message_t *) &message, sizeof(message_t), 1L, 0);
 		if(message_len == -1) {
-			debugc("ERR: Reading Message Failed\n");
+			if(errno == EINTR) {
+				debug("DBG: System Call interrupted. Resuming...\n");
+				continue;
+			}
+				
+			perror("msgrcv");
 			return 1;
 		}
 		
@@ -384,8 +393,11 @@ int signal_intercept(int signal, void (*function)(int)) {
 	
 	/* Building Signal */
 	sig.sa_handler	 = function;
-	sig.sa_flags	 = 0;
-	/* sig.sa_sigaction = NULL; */
+	
+	if(signal == SIGCHLD)
+		sig.sa_flags	 = SA_NOCLDWAIT;
+		
+	else sig.sa_flags	 = 0;
 	
 	/* Installing Signal */
 	if((ret = sigaction(signal, &sig, NULL)) == -1)
