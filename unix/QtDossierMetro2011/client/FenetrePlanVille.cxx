@@ -268,32 +268,37 @@ void FenetrePlanVille::TraceParcours(int Nb, QPainter &paint) {
 }
 
 void FenetrePlanVille::TraceStation(QPainter &paint) {
-	// QRectF source(0.0, 0.0, 22.0, 22.0);
 	QPen pen;
 	int i = 1;
+	char buffer[64];
 	
 	while(stations[i].L && stations[i].C) {
+		/* If station is disabled */
 		if(!stations[i].enabled) {
 			/* Draw "Disabled" */
-			printf("STATION %d IS DISABLED\n", i);
+			debug("DBG: Station #%d is disabled\n", i);
 			
-			// QRectF target(stations[i].L + FIX_FRAME_Y - 22, stations[i].C + FIX_FRAME_X - 22, 22.0, 22.0);
-			// QImage image("edit-delete.png");
-				
-			// paint.drawImage(target, image, source);
-		}
-		
-		/* Avoid overdraw */
-		if(!on_pathway(i)) {
-			pen.setWidth(1);
-			paint.setPen(pen);
+			sprintf(buffer, "%s (Ferme)", stations[i].station);
 			
-			if(i == sys.station_id) {
-				paint.setPen(Qt::blue);
-				paint.drawText(stations[i].L + FIX_FRAME_Y, stations[i].C + FIX_FRAME_X, stations[i].station);
+			/* Writing on map */
+			paint.setPen(Qt::darkRed);
+			paint.drawText(stations[i].L + FIX_FRAME_Y, stations[i].C + FIX_FRAME_X, buffer);
+			
+		} else {
+			/* Station enabled */
+			
+			/* Avoid overdraw pathway (red) */
+			if(!on_pathway(i)) {
+				pen.setWidth(1);
+				paint.setPen(pen);
 				
-			} else {
-				paint.setPen(Qt::black);
+				/* Marking current station in blue */
+				if(i == sys.station_id)
+					paint.setPen(Qt::blue);
+				else 
+					paint.setPen(Qt::black);
+				
+				/* Writing on map */
 				paint.drawText(stations[i].L + FIX_FRAME_Y, stations[i].C + FIX_FRAME_X, stations[i].station);
 			}
 		}
