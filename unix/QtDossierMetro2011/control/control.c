@@ -44,8 +44,13 @@ int main(void) {
 	sys.mkey_id      = &mkey_id;
 	sys.skey_id      = &skey_id;
 	sys.clients_head = &clients;
+	
 	sys.ping         = NULL;
 	sys.ads          = NULL;
+	
+	sys.ads_db	 = NULL;
+	sys.ads_index	 = NULL;
+	sys.ads_count	 = 0;
 	
 	/* Intercepting Signals */
 	signal_intercept(SIGINT, sighandler);
@@ -53,8 +58,11 @@ int main(void) {
 	signal_intercept(SIGCHLD, sighandler);
 	
 	/* Init SQLite */
-	sys.sqlite = init_sql();
-	if(!sys.sqlite)
+	sys.ads_db = ads_init();
+	if(!sys.ads_db)
+		return 1;
+	
+	if(!ads_load())
 		return 1;
 	
 	/* Creating Message Queue */
@@ -93,7 +101,7 @@ int main(void) {
 	
 	/* Starting threads */
 	debug("THR: Threading ads processing...\n");
-	if(pthread_create(&ads, NULL, (void *) show_ads, NULL) != 0)
+	if(pthread_create(&ads, NULL, (void *) ads_show, NULL) != 0)
 		return 1;
 	
 	sys.ads = &ads;
@@ -358,12 +366,19 @@ int main(void) {
 
 void stopping_server() {
 	debug("DBG: Stopping advertissment thread...\n");
+	
+	/* Closing SQL */
+	ads_close();
+	
+	/* Stopping thread */
 	if(pthread_cancel(*(sys.ads)))
 		debugc("ERR: Error while stopping ads thread\n");
 	
 	pthread_join(*(sys.ads), NULL);
 	
 	debug("DBG: Stopping ping thread...\n");
+	
+	/* Stopping thread */
 	if(pthread_cancel(*(sys.ping)))
 		debugc("ERR: Error while stopping ping thread\n");
 	
@@ -371,11 +386,13 @@ void stopping_server() {
 	
 	debug("DBG: Cleaning Messages Queue...\n");
 	
+	/* Closing message queue */
 	if(msgctl(*(sys.mkey_id), IPC_RMID, NULL) < 0)
 		perror("msgctl");
 	
 	debug("DBG: Cleaning Shared Memory Area...\n");
 	
+	/* Closing shared memory */
 	if(shmctl(*(sys.skey_id), IPC_RMID, NULL) < 0)
 		perror("shmctl");
 }

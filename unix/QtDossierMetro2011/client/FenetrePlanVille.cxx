@@ -124,12 +124,12 @@ void FenetrePlanVille::languageChange() {
 	
 	LabelArrivee->setText(tr("Arrivee d'une rame dans"));
 	LabelInformation->setText(tr("<b>Informations</b>"));
+	textInformation->setText(tr("Chargement de la borne..."));
 	LabelMinutes->setText(tr("minutes"));
 	LabelDestination->setText(tr("Destination:"));
 	ButtonSelection->setText(tr("Selection"));
 	ButtonTerminer->setText(tr("Terminer"));
 	LabelNomVille->setText(tr("Station"));
-	// NomVille->setText(tr(NomS));
 
 	lineDestination->setFocus();
 }
@@ -560,7 +560,7 @@ int main(int argc, char *argv[]) {
 	memset(&pathway, 0x0, sizeof(pathway));
 	
 	/* DEBUG: shm content */
-	debug("DEBUG: <%s>\n", shm);
+	debug("Shared Message: <%s>\n", shm);
 
 	/* Building GUI */
 	F1 = new FenetrePlanVille();
