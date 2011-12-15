@@ -2,6 +2,7 @@
 	#define __CONTROL_H
 	
 	#include <pthread.h>
+	#include <sqlite3.h>
 	
 	#define ADMIN_PASSWORD		"helloworld"
 	
@@ -19,6 +20,7 @@
 		struct client_table_t **clients_head;
 		pthread_t *ads;
 		pthread_t *ping;
+		sqlite3 *sqlite;
 		
 	} global_t;
 #endif

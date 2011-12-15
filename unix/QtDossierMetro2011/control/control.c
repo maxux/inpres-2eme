@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <pthread.h>
+#include <sqlite3.h>
 
 #include "debug.h"
 #include "metro_protocol.h"
@@ -36,6 +37,8 @@ int main(void) {
 	clients = NULL;
 	client_head = &clients;
 	
+	debug("DBG: Starting up control process (PID: %d)\n", (int) getpid());
+	
 	/* Init Global Variables */
 	sys.running      = 1;
 	sys.mkey_id      = &mkey_id;
@@ -48,6 +51,11 @@ int main(void) {
 	signal_intercept(SIGINT, sighandler);
 	
 	signal_intercept(SIGCHLD, sighandler);
+	
+	/* Init SQLite */
+	sys.sqlite = init_sql();
+	if(!sys.sqlite)
+		return 1;
 	
 	/* Creating Message Queue */
 	debug("DBG: Creating Message Queue\n");
@@ -81,7 +89,7 @@ int main(void) {
 	strcpy(shm, "Advertissment");
 		
 	/* Init Process Group */
-	debug("DBG: Control PID: %d\n", (int) getpid());
+	// debug("DBG: Control PID: %d\n", (int) getpid());
 	
 	/* Starting threads */
 	debug("THR: Threading ads processing...\n");

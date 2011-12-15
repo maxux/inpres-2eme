@@ -8,7 +8,7 @@ PROJECT_NAME="control"
 
 DEFINES="-D COLOR -D DEBUG"
 CFLAGS="-W -Wall -O2 -pipe -g"
-LDFLAGS="-lpthread"
+LDFLAGS="-lpthread -lsqlite3"
 EXTRACLEAN=""
 
 ##########################################################################
