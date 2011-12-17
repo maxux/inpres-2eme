@@ -19,6 +19,20 @@ void ads_show() {
 	debug("ADS: (SIG) Sending advertissment...\n");
 	
 	while(1) {
+		if(!sys.ads_count)
+			sys.ads_count = 1;
+		
+		if(sys.admin_msg) {
+			/* Reset Flag */
+			sys.admin_msg = 0;
+			
+			/* Sending Admin Message to clients */
+			stack_sending_signal(*(sys.clients_head), SIGUSR2, 0);
+			
+			/* Waiting for resume */
+			usleep(ADMIN_MESSAGE_DELAY * 1000000);
+		}
+			
 		for(i = 0; i < sys.ads_count; i++) {
 			/* Waiting until clients connection */
 			/* while(!sys.clients_head)
@@ -44,19 +58,32 @@ void ads_show() {
 	}
 }
 
-sqlite3_stmt * ads_basic_query(sqlite3 *db, char *sql) {
+sqlite3_stmt * ads_select_query(sqlite3 *db, char *sql) {
 	sqlite3_stmt *stmt;
 	
 	/* Debug SQL */
 	debug("SQL: (QRY) <%s>\n", sql);
 	
 	/* Query */
-	if(sqlite3_prepare(db, sql, strlen(sql) + 1, &stmt, NULL) != SQLITE_OK) {
+	if(sqlite3_prepare_v2(db, sql, strlen(sql) + 1, &stmt, NULL) != SQLITE_OK) {
 		debugc("ADS: (ERR) Query <%s> failed: %s\n", sql, sqlite3_errmsg(db));
 		return NULL;
 	}
 	
 	return stmt;
+}
+
+int ads_simple_query(sqlite3 *db, char *sql) {
+	/* Debug SQL */
+	debug("SQL: (QRY) <%s>\n", sql);
+	
+	/* Query */
+	if(sqlite3_exec(db, sql, NULL, NULL, NULL) != SQLITE_OK) {
+		debugc("ADS: (ERR) Query <%s> failed: %s\n", sql, sqlite3_errmsg(db));
+		return 0;
+	}
+	
+	return 1;
 }
 
 sqlite3 * ads_init() {
@@ -78,10 +105,11 @@ int ads_load() {
 	const unsigned char *sql_text;
 	
 	/* Reading table content */
-	if((stmt = ads_basic_query(sys.ads_db, "SELECT id, text, timeout FROM ads")) == NULL)
+	if((stmt = ads_select_query(sys.ads_db, "SELECT id, text, timeout FROM ads")) == NULL)
 		return 0;
 	
 	/* Counting... */
+	sys.ads_count = 0;
 	while((row = sqlite3_step(stmt)) != SQLITE_DONE) {
 		if(row == SQLITE_ROW)
 			sys.ads_count++;
@@ -93,7 +121,7 @@ int ads_load() {
 	sqlite3_reset(stmt);
 	
 	/* Clearing old index */
-	if(sys.ads_index == NULL)
+	if(sys.ads_index != NULL)
 		free(sys.ads_index);
 	
 	/* Allocating index */
@@ -141,7 +169,7 @@ int ads_content(int id, int *timeout, char *text, size_t textlen) {
 	sprintf(sql, "SELECT text, timeout FROM ads WHERE id = %d", id);
 	
 	/* Reading table content */
-	if((stmt = ads_basic_query(sys.ads_db, sql)) == NULL)
+	if((stmt = ads_select_query(sys.ads_db, sql)) == NULL)
 		return 0;
 	
 	/* Loading table */

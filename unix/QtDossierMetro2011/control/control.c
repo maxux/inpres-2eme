@@ -32,7 +32,10 @@ int main(void) {
 	pid_t forking;		/* PID of the fork (chemin) */
 	pthread_t ads, ping;	/* Threads for multiple processing */
 	
+	ads_struct_t *ads_data;
 	client_table_t **client_head, *clients, *new_client = NULL, *client_temp = NULL;
+	
+	char *buffer;		/* Another buffer (SQL) */
 	
 	clients = NULL;
 	client_head = &clients;
@@ -51,6 +54,8 @@ int main(void) {
 	sys.ads_db	 = NULL;
 	sys.ads_index	 = NULL;
 	sys.ads_count	 = 0;
+	
+	sys.admin_msg	 = 0;
 	
 	/* Intercepting Signals */
 	signal_intercept(SIGINT, sighandler);
@@ -283,41 +288,45 @@ int main(void) {
 			case QRY_SHUTDOWN:
 				debug("QRY: Shutting down server\n");
 				
-				if(stack_check_admin(clients, message.pid)) {
+				if(request_admin(message.request, message.pid, clients)) {
 					debugn("ADM: Shutting down request validated !\n");
 					send_message(ACK_SHUTDOWN, (void*) "Okay master", message.pid, 0);
 					stopping_server();
-					
-				} else {
-					debugc("ERR: Admin Request from a not grant station ! (Client: %d)\n", (int) message.pid)
-					send_message(ERR_DENIED, (void*) "WTF ?!", message.pid, 0);
 				}
-				
-				return 2;
 			break;
 			
 			case QRY_ADMIN_MESSAGE:
 				debug("QRY: Admin Message\n");
 				
-				if(stack_check_admin(clients, message.pid)) {
-					debugn("ADM: Sending message...\n");
-					send_message(ACK_ADMIN_MESSAGE, (void*) "Okay master", message.pid, 0);
+				if(request_admin(message.request, message.pid, clients)) {
+					/* Stopping ads thread */
+					debugn("ADM: Stopping ads thread...\n");
+					if(pthread_cancel(*(sys.ads)))
+						debugc("ERR: Error while stopping ads thread\n");
 					
+					pthread_join(*(sys.ads), NULL);
+					
+					/* Setting message to shm */
+					debugn("ADM: Setting message...\n");
 					strcpy(shm, message.text);
+					sys.admin_msg = 1;
 					
-					stack_sending_signal(clients, SIGUSR2, 0);
+					/* Restarting ads thread */
+					debug("THR: Threading ads processing...\n");
+					if(pthread_create(&ads, NULL, (void *) ads_show, NULL) != 0)
+						return 1;
 					
+					sys.ads = &ads;
 					
-				} else {
-					debugc("ERR: Admin Request from a not grant station ! (Client: %d)\n", (int) message.pid)
-					send_message(ERR_DENIED, (void*) "Permission denied", message.pid, 0);
+					/* Sending ACK to admin */
+					send_message(ACK_ADMIN_MESSAGE, (void*) "Okay master", message.pid, 0);
 				}
 			break;
 			
 			case QRY_DISABLE_STATION:
 				debug("QRY: Disable Station\n");
 				
-				if(stack_check_admin(clients, message.pid)) {
+				if(request_admin(message.request, message.pid, clients)) {
 					memcpy(&id, message.text, sizeof(id));
 					
 					debug("QRY: Disabling Station #%d...\n", id);
@@ -327,17 +336,13 @@ int main(void) {
 					send_message(ACK_DISABLE_STATION, (void*) "Okay", message.pid, 0);
 					
 					stack_sending_signal(clients, SIGWINCH, 0);
-					
-				} else {
-					debugc("ERR: Admin Request from a not grant station ! (Client: %d)\n", (int) message.pid)
-					send_message(ERR_DENIED, (void*) "Permission denied", message.pid, 0);
 				}
 			break;
 			
 			case QRY_ENABLE_STATION:
-				debug("QRY: ENable Station\n");
+				debug("QRY: Enable Station\n");
 				
-				if(stack_check_admin(clients, message.pid)) {
+				if(request_admin(message.request, message.pid, clients)) {
 					memcpy(&id, message.text, sizeof(id));
 					
 					debug("QRY: Enabling Station #%d...\n", id);
@@ -346,11 +351,78 @@ int main(void) {
 					
 					send_message(ACK_ENABLE_STATION, (void*) "Okay", message.pid, 0);
 					
-					stack_sending_signal(clients, SIGWINCH, 0);
+					stack_sending_signal(clients, SIGWINCH, 0);	
+				}
+			break;
+			
+			case QRY_ADS_LIST:
+				debug("QRY: Advertisement list\n");
+				
+				if(request_admin(message.request, message.pid, clients)) {
+					ads_data = (ads_struct_t*) malloc(sizeof(ads_struct_t));
 					
-				} else {
-					debugc("ERR: Admin Request from a not grant station ! (Client: %d)\n", (int) message.pid)
-					send_message(ERR_DENIED, (void*) "Permission denied", message.pid, 0);
+					/* Sending list of ads */
+					for(i = 0; i < sys.ads_count; i++) {
+						ads_data->id = sys.ads_index[i];
+						
+						if(!ads_content(sys.ads_index[i], &(ads_data->timeout), ads_data->message, sizeof(ads_data->message)))
+							debugc("ERR: SQL Error ?\n");
+						
+						send_message(ACK_ADS_LIST, (void*) ads_data, message.pid, sizeof(ads_struct_t));
+					}
+					
+					/* End of list: timeout = 0 */
+					ads_data->timeout = 0;
+					send_message(ACK_ADS_LIST, (void*) ads_data, message.pid, sizeof(ads_struct_t));
+					
+					free(ads_data);
+				}
+			break;
+			
+			case QRY_ADS_INSERT:
+				debug("QRY: Advertisement insert\n");
+				
+				if(request_admin(message.request, message.pid, clients)) {
+					ads_data = (ads_struct_t*) message.text;
+					
+					/* Inserting data */			
+					buffer = sqlite3_mprintf("INSERT INTO ads (id, text, timeout) VALUES (NULL, '%q', %d)", ads_data->message, ads_data->timeout);
+					
+					if(ads_simple_query(sys.ads_db, buffer))
+						send_message(ACK_ADS_INSERT, (void*) "SQL Okay. Data inserted.", message.pid, 0);
+					else
+						send_message(ERR_FAILED, (void*) "SQL Failed.", message.pid, 0);
+
+					sqlite3_free(buffer);
+				}
+			break;
+	
+			case QRY_ADS_DELETE:
+				debug("QRY: Advertisement delete\n");
+				
+				if(request_admin(message.request, message.pid, clients)) {
+					buffer = sqlite3_mprintf("DELETE FROM ads WHERE id = %d", atoi(message.text));
+					
+					if(ads_simple_query(sys.ads_db, buffer)) {
+						/* Forcing commit */
+						ads_load();
+						
+						send_message(ACK_ADS_DELETE, (void*) "Rulz data rm", message.pid, 0);
+						
+					} else  send_message(ERR_FAILED, (void*) "SQL Failed.", message.pid, 0);
+					
+					sqlite3_free(buffer);
+				}
+			break;
+			
+			case QRY_ADS_COMMIT:
+				debug("QRY: Request commit ads\n");
+				
+				if(request_admin(message.request, message.pid, clients)) {
+					if(ads_load())
+						send_message(ACK_ADS_COMMIT, (void*) "Commitz rulz. Have fnu wiz it", message.pid, 0);
+					else
+						send_message(ERR_FAILED, (void*) "Commit failed", message.pid, 0);
 				}
 			break;
 			
@@ -362,6 +434,15 @@ int main(void) {
 	stopping_server();
 	
 	return 0;
+}
+
+int request_admin(metro_protocol request, pid_t pid, client_table_t *clients) {
+	if(!stack_check_admin(clients, pid)) {
+		debugc("ERR: Admin Request (0x%x) from not grant station #%d. Denied.\n", request, (int) pid);
+		send_message(ERR_DENIED, (void*) "Permission denied", pid, 0);
+		return 0;
+		
+	} else return 1;
 }
 
 void stopping_server() {
@@ -395,6 +476,8 @@ void stopping_server() {
 	/* Closing shared memory */
 	if(shmctl(*(sys.skey_id), IPC_RMID, NULL) < 0)
 		perror("shmctl");
+	
+	exit(0);
 }
 
 void sighandler(int signal) {

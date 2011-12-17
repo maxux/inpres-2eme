@@ -20,7 +20,7 @@ global_t sys;
 int check_login(char *passwd) {
 	message_t message;
 	
-	send_message(QRY_ADMIN_LOGIN, (void*) passwd);
+	send_message(QRY_ADMIN_LOGIN, (void*) passwd, 0);
 	read_message(&message);
 	
 	switch(message.request) {
@@ -63,7 +63,7 @@ void sig_handler(int signum) {
 	switch(signum) {
 		/* SIGPWR: Ping */
 		case SIGPWR:
-			send_message(ACK_PONG, (void*) "Pong !");
+			send_message(ACK_PONG, (void*) "Pong !", 0);
 		break;
 		
 		/* SIGUSR1: New ads */
@@ -105,7 +105,7 @@ int download_data(station_t *stations) {
 	
 	/* Downloading stations */
 	debug("QRY: Stations List\n");
-	send_message(QRY_PATHLIST, (void*) "Wantz Stations");
+	send_message(QRY_PATHLIST, (void*) "Wantz Stations", 0);
 	read_message(&message);
 	
 	if(message.request != ACK_PATHLIST) {
@@ -140,7 +140,7 @@ int disable_station(void) {
 	
 	debug("ADM: Disabling Station #%d...\n", id);
 	
-	send_message(QRY_DISABLE_STATION, (void*) &id);
+	send_message(QRY_DISABLE_STATION, (void*) &id, sizeof(id));
 	read_message(&message);
 	
 	if(message.request != ACK_DISABLE_STATION) {
@@ -174,7 +174,7 @@ int enable_station(void) {
 	
 	debug("ADM: Enabling Station #%d...\n", id);
 	
-	send_message(QRY_ENABLE_STATION, (void*) &id);
+	send_message(QRY_ENABLE_STATION, (void*) &id, sizeof(id));
 	read_message(&message);
 	
 	if(message.request != ACK_ENABLE_STATION) {
@@ -192,7 +192,7 @@ int admin_message(void) {
 	printf("Message: ");
 	while(fgets(msg, sizeof(msg), stdin) == NULL);
 	
-	send_message(QRY_ADMIN_MESSAGE, (void*) msg);
+	send_message(QRY_ADMIN_MESSAGE, (void*) msg, 0);
 	read_message(&message);
 	
 	if(message.request != ACK_ADMIN_MESSAGE) {
@@ -207,13 +207,112 @@ int shutdown_control(void) {
 	message_t message;
 	
 	printf("Sending...\n");
-	send_message(QRY_SHUTDOWN, (void*) "Fuck");
+	send_message(QRY_SHUTDOWN, (void*) "Fuck", 0);
 	read_message(&message);
 	
 	if(message.request != ACK_SHUTDOWN) {
 		debugc("ERR: Negative ack (0x%x).\n", message.request);
 		
 	} else exit(0);
+	
+	return 0;
+}
+
+int insert_ads(void) {
+	char buffer[32];
+	message_t message;
+	ads_struct_t ads;
+	
+	ads.id = 0;
+	
+	printf("Ads: ");
+	while(fgets(ads.message, sizeof(ads.message), stdin) == NULL);
+	ads.message[strlen(ads.message) - 1] = '\0';
+	
+	printf("Timeout: ");
+	while(1) {
+		if(fgets(buffer, sizeof(buffer), stdin) == NULL)
+			continue;
+			
+		if((ads.timeout = atoi(buffer)) == 0)
+			continue;
+		
+		break;
+	}
+	
+	debug("Inserting <%s> (timeout: %d seconds)\n", ads.message, ads.timeout);
+	
+	send_message(QRY_ADS_INSERT, (void*) &ads, sizeof(ads));
+	read_message(&message);
+	
+	if(message.request != ACK_ADS_INSERT) {
+		debugc("ERR: Invalid response (0x%x).\n", message.request);
+		
+	} else debug("ADM: Ads inserted !\n");
+	
+	return 0;
+}
+
+int list_ads(void) {
+	message_t message;
+	ads_struct_t *ads;
+	
+	send_message(QRY_ADS_LIST, (void*) "Wantz ADS List Plz", 0);
+	
+	printf("Ads list: (Warning: only ads commited is displayed)\n");
+	
+	while(1) {
+		read_message(&message);
+		
+		if(message.request != ACK_ADS_LIST) {
+			debugc("ERR: Invalid response (0x%x).\n", message.request);
+			break;	
+		}
+		
+		ads = (ads_struct_t*) message.text;
+		
+		if(ads->timeout == 0)
+			break;
+		
+		printf(" #%d (Timeout: %d) %s\n", ads->id, ads->timeout, ads->message);
+	}
+	
+	return 0;
+}
+
+int delete_ads(void) {
+	message_t message;
+	char buffer[32];
+	
+	list_ads();
+	
+	printf("Delete ID: ");
+	while(fgets(buffer, sizeof(buffer), stdin) == NULL);
+	
+	if(*buffer != '\n') {	
+		send_message(QRY_ADS_DELETE, (void*) buffer, 0);
+		read_message(&message);
+		
+		if(message.request != ACK_ADS_DELETE) {
+			debugc("ERR: Invalid response (0x%x).\n", message.request);
+			
+		} else debug("ADM: Ads deleted !\n");
+		
+	} else printf(" -> Cancel\n");
+	
+	return 0;
+}
+
+int commit_ads(void) {
+	message_t message;
+	
+	send_message(QRY_ADS_COMMIT, (void*) "Commit it plz", 0);
+	read_message(&message);
+	
+	if(message.request == ACK_ADS_COMMIT) {
+		debug("ACK: Commit okay\n");
+		
+	} else debugc("ERR: Commit failed: 0x%x\n", message.request);
 	
 	return 0;
 }
@@ -240,6 +339,9 @@ int main(void) {
 	menu_append(menu, "Message administrateur", 1, admin_message, NULL);
 	menu_append(menu, "Désactiver une station", 2, disable_station, NULL);
 	menu_append(menu, "Activer une station", 3, enable_station, NULL);
+	menu_append(menu, "Ajouter une pub", 4, insert_ads, NULL);
+	menu_append(menu, "Supprimer une pub", 5, delete_ads, NULL);
+	menu_append(menu, "Commit pub", 6, commit_ads, NULL);
 	menu_append(menu, "Shutdown Control", 8, shutdown_control, NULL);
 	menu_append(menu, "Quitter l'administration", 9, NULL, NULL);
 	
@@ -248,7 +350,7 @@ int main(void) {
 	menu_free(menu);
 
 	
-	send_message(QRY_LOGOUT, (void*) "I leave thx");
+	send_message(QRY_LOGOUT, (void*) "I leave thx", 0);
 	
 	return 0;
 }

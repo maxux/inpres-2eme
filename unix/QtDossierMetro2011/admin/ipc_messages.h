@@ -15,6 +15,6 @@
 		
 	} message_t;
 	
-	int send_message(metro_protocol request, void *data);
+	int send_message(metro_protocol request, void *data, size_t bsize);
 	int read_message(message_t *destination);
 #endif

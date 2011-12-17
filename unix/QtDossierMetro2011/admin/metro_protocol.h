@@ -2,6 +2,7 @@
 	#define __METRO_PROTOCOL
 	
 	#define METRO_MAX_STATION	40
+	#define ADS_MAX_LENGTH		1024
 	
 	/* Communication Protocol */
 	typedef enum {
@@ -32,6 +33,7 @@
 		ACK_PONG		= 0x0B,	// ACK for a Ping Query (via sig)		
 		
 		ERR_DENIED		= 0x0D,	// ERR from server. Client is denied.
+		ERR_FAILED		= 0x21,	// ERR from server. Cannot process.
 		
 		QRY_ADMIN_LOGIN		= 0x0E,	// QRY for admin remote access
 		ACK_ADMIN_LOGIN		= 0x0F,	// ACK for admin remote access
@@ -43,7 +45,19 @@
 		ACK_DISABLE_STATION	= 0x18,	// ACK if station disabled
 		
 		QRY_ENABLE_STATION	= 0x19,	// QRT enable station node visite
-		ACK_ENABLE_STATION	= 0x1A	// ACK if station enabled
+		ACK_ENABLE_STATION	= 0x1A,	// ACK if station enabled
+		
+		QRY_ADS_LIST		= 0x1B,	// QRY list of ads messages
+		ACK_ADS_LIST		= 0x1C,	// ACK content list ads
+		
+		QRY_ADS_INSERT		= 0x1D,	// QRY add an ads to database
+		ACK_ADS_INSERT		= 0x1E, // ACK ads inserted
+		
+		QRY_ADS_DELETE		= 0x1F,	// QRT delete ads from database
+		ACK_ADS_DELETE		= 0x20,	// ACK row deleted
+		
+		QRY_ADS_COMMIT		= 0x21,	// QRY for validate ads edit
+		ACK_ADS_COMMIT		= 0x22	// ACK ads commited
 		
 	} metro_protocol;
 	
@@ -61,5 +75,12 @@
 		int suivant[6];
 		
 	} metro_nodes_t; */
+	
+	typedef struct ads_struct_t {
+		int timeout;
+		char message[ADS_MAX_LENGTH];
+		int id;
+		
+	} ads_struct_t;
 #endif
 
