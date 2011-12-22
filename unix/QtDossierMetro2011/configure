@@ -2,7 +2,7 @@
 set -e
 
 PRE=$(pwd)
-CONF="client control chemin admin"
+CONF="client control chemin admin metro"
 
 for i in $CONF; do
 	echo "-- Configuring $i"

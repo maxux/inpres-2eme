@@ -18,20 +18,20 @@ void ads_show() {
 	
 	debug("ADS: (SIG) Sending advertissment...\n");
 	
+	if(sys.admin_msg) {
+		/* Reset Flag */
+		sys.admin_msg = 0;
+		
+		/* Sending Admin Message to clients */
+		stack_sending_signal(*(sys.clients_head), SIGUSR2, 0);
+		
+		/* Waiting for resume */
+		usleep(ADMIN_MESSAGE_DELAY * 1000000);
+	}
+	
 	while(1) {
 		if(!sys.ads_count)
 			sys.ads_count = 1;
-		
-		if(sys.admin_msg) {
-			/* Reset Flag */
-			sys.admin_msg = 0;
-			
-			/* Sending Admin Message to clients */
-			stack_sending_signal(*(sys.clients_head), SIGUSR2, 0);
-			
-			/* Waiting for resume */
-			usleep(ADMIN_MESSAGE_DELAY * 1000000);
-		}
 			
 		for(i = 0; i < sys.ads_count; i++) {
 			/* Waiting until clients connection */

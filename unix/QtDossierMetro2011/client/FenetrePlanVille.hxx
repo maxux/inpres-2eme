@@ -89,6 +89,7 @@
 		char interface_ready;
 		char first_start;
 		int station_id;
+		int next_timeout;
 		
 	} global_t;
 #endif

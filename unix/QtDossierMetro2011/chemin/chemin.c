@@ -51,7 +51,7 @@ int main(void) {
 	read_message(&message);
 	
 	if(message.request == ACK_NODESLIST) {
-		printf("FRK: (ACK) Nodes List\n");
+		debug("FRK: (ACK) Nodes List\n");
 		memcpy(nodes, message.text, sizeof(nodes));
 		
 	} else debugc("FRK: (ERR) Wrong opcode: 0x%x\n", message.request);

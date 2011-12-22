@@ -361,8 +361,20 @@ void FenetrePlanVille::TraceChemin(int Nb, int Chemin[], QPainter &paint) {
 
 void sig_handler(int signum) {
 	message_t message;
+	char buffer[16];
 	
 	switch(signum) {
+		/* SIGALRM: Next timeout */
+		case SIGALRM:
+			sprintf(buffer, "%d", sys.next_timeout);
+			sys.window->lineMinutes->setText(buffer);
+			
+			if(sys.next_timeout > 0) {
+				sys.next_timeout--;
+				alarm(1);
+			}
+		break;
+		
 		/* SIGPWR: Ping */
 		case SIGPWR:
 			send_message(ACK_PONG, (void*) "Pong !", 0);
@@ -406,6 +418,11 @@ void sig_handler(int signum) {
 		
 		case SIGINT:
 			sys.window->Terminer();
+		break;
+		
+		case SIGCONT:
+			sys.next_timeout = 5;
+			sig_handler(SIGALRM);
 		break;
 	}
 }
@@ -492,7 +509,7 @@ int main(int argc, char *argv[]) {
 	sys.interface_ready = 0;
 	sys.first_start     = 1;
 	
-	/* Intercept ALARM */
+	/* Intercept ALARM: Station timeout */
 	signal_intercept(SIGALRM, sig_handler);
 	
 	/* Intercept SIGUSR1: Advertissment */
@@ -509,6 +526,9 @@ int main(int argc, char *argv[]) {
 
 	/* Intercept SIGWINCH: Refresh map */
 	signal_intercept(SIGWINCH, sig_handler);
+	
+	/* Intercept SIGWINCH: Metro on Station */
+	signal_intercept(SIGCONT, sig_handler);
 	
 	if((mkey_id = msgget(MESSAGE_KEY_ID, IPC_CREAT | 0666)) < 0) {
 		perror("msgget");

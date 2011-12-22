@@ -5,6 +5,7 @@
 	
 	#define METRO_MAX_LIGNE		20
 	#define METRO_MAX_STATION	40
+	#define METRO_MAX_POSITION	15
 	
 	#include "ads.h"
 	
@@ -61,7 +62,10 @@
 		ACK_ADS_DELETE		= 0x20,	// ACK row deleted
 		
 		QRY_ADS_COMMIT		= 0x21,	// QRY for validate ads edit
-		ACK_ADS_COMMIT		= 0x22	// ACK ads commited
+		ACK_ADS_COMMIT		= 0x22,	// ACK ads commited
+		
+		QRY_METRO_MOVE		= 0x23, // QRY metro is on a new station
+		ACK_METRO_MOVE		= 0x24	// ACK metro forwarded
 		
 	} metro_protocol;
 	
@@ -101,7 +105,7 @@
 	
 	/* Colored Schema (interface independant) */
 	typedef struct ligne_legacy_t {
-		position_t position[15];
+		position_t position[METRO_MAX_POSITION];
 		legacy_color couleur;
 		
 	} ligne_legacy_t;
@@ -119,4 +123,12 @@
 		int id;
 		
 	} ads_struct_t;
+	
+	typedef struct metro_position_t {
+		int id;
+		int current;
+		int station;
+		int next;
+		
+	} metro_position_t;
 #endif

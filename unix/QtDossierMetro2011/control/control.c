@@ -35,6 +35,8 @@ int main(void) {
 	ads_struct_t *ads_data;
 	client_table_t **client_head, *clients, *new_client = NULL, *client_temp = NULL;
 	
+	metro_position_t *mpos;	/* Metro Position (from GereMetro) */
+	
 	char *buffer;		/* Another buffer (SQL) */
 	
 	clients = NULL;
@@ -198,7 +200,23 @@ int main(void) {
 					leader_pid = message.pid;
 				
 				if(setpgid(message.pid, leader_pid) == -1)
-					perror("[-] setpgid"); */
+					perror("setpgid"); */
+			break;
+			
+			case QRY_METRO_MOVE:
+				debug("QRY: Metro Move (Position)\n");
+				
+				mpos = (metro_position_t*) message.text;
+				debug("MOV: Line #%d is on station #%d (Next: #%d)\n", mpos->id, mpos->station, mpos->next);
+				
+				/* Searching Client PID */
+				client_temp = stack_search_station(clients, stations[mpos->next].station);
+				if(client_temp != NULL) {
+					debugn("MOV: Client online, sending signal\n");
+					kill(client_temp->pid, SIGCONT);
+				}
+				
+				send_message(ACK_METRO_MOVE, (void*) "Rulz", message.pid, 0);
 			break;
 			
 			case QRY_LOGOUT:

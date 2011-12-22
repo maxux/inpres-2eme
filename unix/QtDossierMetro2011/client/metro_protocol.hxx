@@ -2,6 +2,7 @@
 	#define __METRO_PROTOCOL
 	
 	#define METRO_MAX_STEP		32
+	#define METRO_MAX_POSITION	15
 	
 	/* Communication Protocol */
 	typedef enum {
@@ -66,7 +67,7 @@
 	
 	/* Colored Schema (interface independant) */
 	typedef struct ligne_legacy_t {
-		position_t position[15];
+		position_t position[METRO_MAX_POSITION];
 		legacy_color couleur;
 		
 	} ligne_legacy_t;
