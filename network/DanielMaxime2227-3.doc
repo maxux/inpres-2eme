@@ -1,0 +1,51 @@
+ == Exercice 8 ==
+
+Quel est la commande pour configurer une IP Adresse en ppp ?
+	-> 
+
+Quel est la commande pour avoir l encapsulation ppp ?
+	-> encapsulation ppp
+
+Si je veut une horloge , quelle commande doit je rajouter sur le router1 & Router2
+	-> Router1: clock rate 64000
+	-> Router2: no clock rate
+
+ == Exercice 9 ==
+Pour avoir l authentification chap que doit je rajouter sur le router1 & router2 sachant que la partie ppp est déjà opérationnelle ?
+	-> Routeur1: ppp authentification chap
+	-> Routeur1: username _hostname_routeur2_ password _password_routeur2_
+	-> Routeur1: enable secret _password_routeur1_
+	
+	-> Routeur2: ppp authentification chap
+	-> Routeur2: username _hostname_routeur1_ password _password_routeur1_
+	-> Routeur2: enable secret _password_routeur2_
+
+
+ == Exercice 10 ==
+Comment au niveau de packet tracer limiter le trafic à TCP & http ?
+	-> Utiliser un filtre
+
+Citez les couches mises en œuvre dans l exercice ?
+	-> 1: Couche physique
+	-> 2: Couche réseau
+	-> 3: Couche de liaison
+	-> 4: Couche de transport
+
+Une requete http est encapsulée dans ?
+	-> Un segment TCP
+
+Un segment TCP est encapsulé dans ?
+	-> Un packet IP
+
+Un paquet IP est encapsulé dans ?
+	-> Une trame Ethernet
+
+Entre le PC1 et le routeur1 quelles adresses IP sont insérées dans le paquet IP ?
+	-> Source et destination
+
+Entre le Routeur1 et le routeur2 quelles adresses IP sont insérées dans le paquet IP ?
+Entre le Routeur2 et le serveur quelles adresses IP sont insérées dans le paquet IP ?
+Le champ TTL vaut quoi respectivement au PC0, routeur1,router2, au Hub, au serveur ?
+Quand TCP fait une ouverture de connexion quel flag utilise –t-il ?
+Quand le Serveur répond à la demande de connexion TCP quel flag utilise-t-il ?
+
