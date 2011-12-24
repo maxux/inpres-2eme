@@ -34,7 +34,10 @@ void metro(metro_t *me) {
 	}
 	
 	/* Add realism :D */
-	usleep(rand() / 200);
+	if(RAND_MAX < 128000)
+		usleep(rand() * 200);
+	else
+		usleep(rand() / 200);
 	
 	while(1) {
 		debug("THR: (DBG) Line %d (Sens: %d): current: %d\n", me->line, me->sens, naow.current);
