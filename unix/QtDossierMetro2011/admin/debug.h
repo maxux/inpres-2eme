@@ -16,20 +16,36 @@
 		#define COLOR_NONE	""
 	#endif
 	
+	extern global_t sys;
+	
 	/* Printing Message */
-	#define __debug(...)	{ fprintf(stderr, __VA_ARGS__); \
-				fprintf(stderr, COLOR_NONE); }
+	#define __debug(...)	{ 				\
+				fprintf(stderr, __VA_ARGS__);	\
+				fprintf(stderr, COLOR_NONE);	\
+				}
 	
 	/* Setting Colors */
 	/* Info Message */
-	#define debugn(...)	{ fprintf(stderr, COLOR_BLUE); \
-				__debug(__VA_ARGS__); }
+	#define debugn(...)	{ 				\
+				fprintf(stderr, COLOR_BLUE);	\
+				__debug(__VA_ARGS__);		\
+				fprintf(sys.log, __VA_ARGS__); \
+				fflush(sys.log);		\
+				}
 				
 	/* Classic Debug */
-	#define debug(...)	{ fprintf(stderr, COLOR_GREY); \
-				__debug(__VA_ARGS__); }
+	#define debug(...)	{				\
+				fprintf(stderr, COLOR_GREY);	\
+				__debug(__VA_ARGS__);		\
+				fprintf(sys.log, __VA_ARGS__); \
+				fflush(sys.log);		\
+				}
 	
 	/* Critical Debug */	
-	#define debugc(...)	{ fprintf(stderr, COLOR_RED); \
-				__debug(__VA_ARGS__); }
+	#define debugc(...)	{				\
+				fprintf(stderr, COLOR_RED); 	\
+				__debug(__VA_ARGS__);		\
+				fprintf(sys.log, __VA_ARGS__); \
+				fflush(sys.log);		\
+				}
 #endif

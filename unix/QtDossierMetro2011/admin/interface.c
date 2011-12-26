@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "admin.h"
+#include "debug.h"
 #include "interface.h"
 
 menu_t * menu_create(char *title, int exit_id) {

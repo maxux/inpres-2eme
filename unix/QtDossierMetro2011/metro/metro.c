@@ -5,11 +5,11 @@
 #include <time.h>
 #include <string.h>
 
-#include "debug.h"
 #include "metro_protocol.h"
 #include "ipc_messages.h"
 #include "geremetro.h"
 #include "metro.h"
+#include "debug.h"
 
 extern ligne_legacy_t legacy_lignes[];
 extern metro_nodes_t nodes[];

@@ -21,6 +21,13 @@ int main(void) {
 	pathway_t pathway;
 	message_t message;
 	
+	/* Init Logs */
+	sys.log = fopen("../log/chemin.log", "w");
+	if(!sys.log) {
+		perror("fopen");
+		return 2;
+	}
+	
 	/* System Global */
 	sys.mkey_id = &mkey_id;
 	
@@ -74,6 +81,8 @@ int main(void) {
 	/* Sending message */
 	debug("FRK: (DBG) Sending data to client (%d)\n", (int) ask.client);
 	send_message(ACK_SEARCH, (void*) &pathway, ask.client, sizeof(pathway));
+	
+	fclose(sys.log);
 	
 	exit(0);
 }

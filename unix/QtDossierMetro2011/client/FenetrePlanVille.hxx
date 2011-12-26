@@ -1,6 +1,7 @@
 #ifndef FENETREPLANVILLE_H
 	#define FENETREPLANVILLE_H
 
+	#include <cstdio>
 	#include <qvariant.h>
 	#include <qdialog.h>
 	#include <qpainter.h>
@@ -84,6 +85,8 @@
 	
 	typedef struct global_t {
 		FenetrePlanVille *window;
+		FILE *log;
+		
 		int *mkey_id;
 		char *shm;
 		char interface_ready;

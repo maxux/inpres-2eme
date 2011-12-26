@@ -4,6 +4,7 @@
 	#include "metro_protocol.h"
 	
 	typedef struct global_t {
+		FILE *log;
 		int *mkey_id;
 		
 	} global_t;

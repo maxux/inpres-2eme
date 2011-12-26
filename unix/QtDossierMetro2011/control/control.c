@@ -10,13 +10,13 @@
 #include <pthread.h>
 #include <sqlite3.h>
 
-#include "debug.h"
 #include "metro_protocol.h"
 #include "ipc_messages.h"
 #include "control.h"
 #include "stack_client.h"
 #include "station_data.h"
 #include "ads.h"
+#include "debug.h"
 
 global_t sys;
 
@@ -41,6 +41,13 @@ int main(void) {
 	
 	clients = NULL;
 	client_head = &clients;
+	
+	/* Init Logs */
+	sys.log = fopen("../log/control.log", "w");
+	if(!sys.log) {
+		perror("fopen");
+		return 2;
+	}
 	
 	debug("DBG: Starting up control process (PID: %d)\n", (int) getpid());
 	
@@ -494,6 +501,8 @@ void stopping_server() {
 	/* Closing shared memory */
 	if(shmctl(*(sys.skey_id), IPC_RMID, NULL) < 0)
 		perror("shmctl");
+	
+	fclose(sys.log);
 	
 	exit(0);
 }

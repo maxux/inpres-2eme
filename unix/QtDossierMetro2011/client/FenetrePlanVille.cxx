@@ -136,6 +136,8 @@ void FenetrePlanVille::languageChange() {
 
 void FenetrePlanVille::Terminer() {
 	send_message(QRY_LOGOUT, (void*) "kthxbye", 0);
+	fclose(sys.log);
+	
 	exit(0);
 }
 
@@ -497,10 +499,19 @@ int main(int argc, char *argv[]) {
 	key_t skey;		/* Shared Memory Segment ID */
 	int skey_id;		/* Shared Memory key */
 	char *shm;		/* Shared Memory Segment */
+	char logs[32];		/* Log Filename */
 
 	char *cname;		/* Client Name */
 	
 	QApplication a(argc, argv);
+	
+	/* Init Logs */
+	sprintf(logs, "../log/client-%d.log", (int) getpid());
+	sys.log = fopen(logs, "w");
+	if(!sys.log) {
+		perror("fopen");
+		return 2;
+	}
 	
 	debugn("Loading...\n");
 	
@@ -540,6 +551,8 @@ int main(int argc, char *argv[]) {
 		cname = argv[1];
 	else
 		cname = (char*) "Untitled Client";
+	
+	debug("DBG: Init Client <%s>...\n", cname);
 	
 	/* Requesting Login */
 	if(!send_message(QRY_LOGIN, (void*) cname, 0)) {

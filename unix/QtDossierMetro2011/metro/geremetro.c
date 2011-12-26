@@ -10,11 +10,11 @@
 #include <string.h>
 #include <pthread.h>
 
-#include "debug.h"
 #include "metro_protocol.h"
 #include "ipc_messages.h"
 #include "geremetro.h"
 #include "metro.h"
+#include "debug.h"
 
 global_t sys;
 
@@ -31,6 +31,13 @@ int main(void) {
 	
 	metro_t **metros;
 	metro_position_t metro_message;
+	
+	/* Init Logs */
+	sys.log = fopen("../log/geremetro.log", "w");
+	if(!sys.log) {
+		perror("fopen");
+		return 2;
+	}
 	
 	debug("DBG: Starting up metro process (PID: %d)\n", (int) getpid());
 	
@@ -152,6 +159,8 @@ void stopping_metro() {
 	}
 	
 	free(sys.metros);
+	
+	fclose(sys.log);
 	
 	exit(0);
 }

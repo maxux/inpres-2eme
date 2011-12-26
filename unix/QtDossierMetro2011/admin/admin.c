@@ -8,11 +8,11 @@
 #include <sys/types.h>
 #include <signal.h>
 
+#include "admin.h"
 #include "metro_protocol.h"
 #include "ipc_messages.h"
 #include "interface.h"
 #include "console.h"
-#include "admin.h"
 #include "debug.h"
 
 global_t sys;
@@ -321,6 +321,13 @@ int main(void) {
 	int mkey_id;		/* Message Queue ID */
 	menu_t *menu;		/* Main Menu */
 	
+	/* Init Logs */
+	sys.log = fopen("../log/chemin.log", "w");
+	if(!sys.log) {
+		perror("fopen");
+		return 2;
+	}
+	
 	/* Setting global variables */
 	sys.mkey_id = &mkey_id;
 	
@@ -351,6 +358,8 @@ int main(void) {
 
 	
 	send_message(QRY_LOGOUT, (void*) "I leave thx", 0);
+	
+	fclose(sys.log);
 	
 	return 0;
 }

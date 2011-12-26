@@ -30,6 +30,8 @@
 	
 	typedef struct global_t {
 		int running;
+		FILE *log;
+		
 		int *mkey_id;
 		metro_t **metros;
 		int *nbthreads;

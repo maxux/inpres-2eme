@@ -3,6 +3,7 @@
 	
 	/* SYSTEM GLOBAL */
 	typedef struct global_t {
+		FILE *log;
 		int *mkey_id;
 		int *skey_id;
 		
