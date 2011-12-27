@@ -7,11 +7,16 @@ int main(void) {
 	UI ui;
 	char running = 1;
 	
+	cout << endl << " Dossier C++ - Janvier 2011 - FanaDeCollection" << endl;
+	cout << " =============================================" << endl << endl;
+	
 	while(running) {
 		/* Waiting login */
 		while(!ui.login());
 		
-		running = 0;
+		ui.prepare();
+		
+		running = ui.start_events();
 	}
 	
 	return 0;
