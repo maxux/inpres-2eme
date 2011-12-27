@@ -1,0 +1,13 @@
+1:Woody:ToyStory:Amitie:94
+2:Jessie:ToyStory:Amitie:90
+3:Lenny:ToyStory:Amitie:85
+4:BuzzLEclair:ToyStory:Amitie:88
+5:Zigzag:ToyStory:Amitie:90
+6:Rex:ToyStory:QualiteStar:25
+73:Nemo:FindingNemo:Amitie:100
+74:Dory:FindingNemo:Amitie:90
+75:Marin:FindingNemo:Amitie:84
+76:Gill:FindingNemo:QualiteStar:7
+86:Bruce:FindingNemo:QualiteStar:30
+136:FlashMcQueen:Cars:QualiteStar:100
+137:ChickHicks:Cars:QualiteStar:55
