@@ -1,5 +1,5 @@
 #include "Collectionneur.hxx"
-#include <stdio.h>
+#include <cstdio>
 #include <string.h>
 
 using namespace std;

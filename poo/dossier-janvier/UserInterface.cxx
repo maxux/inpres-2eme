@@ -5,6 +5,7 @@
 
 #include "UserInterface.hxx"
 #include "UserInterfaceMenu.hxx"
+#include "UserInterfaceMenuLink.hxx"
 
 UI::UI() {
 	_level = 0;
@@ -77,10 +78,55 @@ void UI::prepare() {
 	
 }
 
+int dummy(void*) {
+	cout << "DUMMY" << endl;
+	return 0;
+}
+
 int UI::start_events() {
 	UIMenu menu;
 	
-	cout << "Plop" << endl;
+	switch(_level) {
+		case USER_LEVEL_ADMIN:
+			menu.create("Menu d'administration");
+			
+			menu.append("Afficher la liste des utilisateurs", '1', admin_display_userlist, NULL);
+			menu.append("Afficher les infos d'un utilisateur", '2', dummy, NULL);
+			menu.append("Créer un collectionneur", '3', NULL, NULL);
+			menu.append("Créer un concepteur d'album", '4', NULL, NULL);
+			menu.append("Changer le mot de passe administrateur", '5', admin_change_passwd, NULL);
+			menu.append("Fermer la session", 'N', NULL, NULL, true);
+			
+			return menu.process();
+		break;
+		
+		case USER_LEVEL_DESIGNER:
+			menu.create("Concepteur d'album - ");
+			
+			menu.append("Sélectionner un album courant", '1', NULL, NULL);
+			menu.append("Ajouter une carte", '2', dummy, NULL);
+			menu.append("Afficher l'album", '3', NULL, NULL);
+			menu.append("Fermer la session", 'N', NULL, NULL, true);
+			
+			return menu.process();
+		break;
+		
+		case USER_LEVEL_COLLECT:
+			menu.create("Collectionneur - ");
+			
+			menu.append("Sélectionner une carte courante", '1', NULL, NULL);
+			menu.append("Pour la collection courante", '2', dummy, NULL);
+			menu.append("Afficher la liste de mes collections", '3', NULL, NULL);
+			menu.append("Comparer deux collections", '4', NULL, NULL);
+			menu.append("Fermer la session", 'N', NULL, NULL, true);
+			
+			return menu.process();
+		break;
+		
+		default:
+			cerr << "Wrong userlevel this should not arrive !" << endl;
+			return 1;
+	}
 }
 
 /* Console Handling */
