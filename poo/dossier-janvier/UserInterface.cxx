@@ -27,10 +27,10 @@ int UI::login() {
 	restore_echo();
 	cout << endl << endl;;
 	
-	return check_login();
+	return check_login(_login);
 }
 
-int UI::check_login() {
+int UI::check_login_exists(string login) {
 	ifstream passfile(FILENAME_LOGIN);
 	string line;
 	string read_user, read_pass;
@@ -38,7 +38,7 @@ int UI::check_login() {
 	
 	/* File doesn't exists. Fallback to admin */
 	if(!passfile)
-		return anti_flood((_login == "admin" && _passwd == ADMIN_DEFAULT_PASSWORD));	
+		return (login == "admin");
 	
 	/* Reading each lines */
 	while(passfile >> line) {
@@ -46,17 +46,50 @@ int UI::check_login() {
 		read_user = tok;
 		
 		/* Checking Login */
-		if(read_user != _login)
+		if(read_user == login) {
+			passfile.close();
+			return 1;
+		}
+	}
+	
+	/* Not found */
+	return 0;
+}
+
+int UI::check_login(string login) {
+	ifstream passfile(FILENAME_LOGIN);
+	string line;
+	string read_user, read_pass;
+	char *tok;
+	
+	/* File doesn't exists. Fallback to admin */
+	if(!passfile.is_open())
+		return anti_flood((login == "admin" && _passwd == ADMIN_DEFAULT_PASSWORD));	
+	
+	/* Reading each lines */
+	while(passfile >> line) {
+		tok = strtok((char*) line.c_str(), ":");
+		read_user = tok;
+		
+		/* Checking Login */
+		if(read_user != login)
 			continue;
 		
 		/* Compare password */
 		tok = strtok(NULL, ":");
 		read_pass = tok;
 		
+		passfile.close();
+		
 		return anti_flood((read_pass == _passwd));
 	}
 	
+	/* Fallback admin (not from file) */
+	if(login == "admin" && _passwd == ADMIN_DEFAULT_PASSWORD)
+		return 1;
+		
 	/* Not found */
+	passfile.close();
 	return anti_flood(0);
 }
 
@@ -67,15 +100,17 @@ inline int UI::anti_flood(int value) {
 	return value;
 }
 
+int UI::user_level(string username) {
+	if(username == "admin") {
+		return USER_LEVEL_ADMIN;
+	}
+	
+	return USER_LEVEL_COLLECT;
+}
 
 void UI::prepare() {
 	/* Pre-Check Login Access */
-	if(_login == "admin") {
-		_level = USER_LEVEL_ADMIN;
-		return;
-	}
-	
-	
+	_level = user_level(_login);	
 }
 
 int dummy(void*) {
@@ -91,9 +126,9 @@ int UI::start_events() {
 			menu.create("Menu d'administration");
 			
 			menu.append("Afficher la liste des utilisateurs", '1', admin_display_userlist, NULL);
-			menu.append("Afficher les infos d'un utilisateur", '2', dummy, NULL);
-			menu.append("Créer un collectionneur", '3', NULL, NULL);
-			menu.append("Créer un concepteur d'album", '4', NULL, NULL);
+			menu.append("Afficher les infos d'un utilisateur", '2', admin_display_userinfo, NULL);
+			menu.append("Créer un collectionneur", '3', admin_add_collect, NULL);
+			menu.append("Créer un concepteur d'album", '4', admin_add_designer, NULL);
 			menu.append("Changer le mot de passe administrateur", '5', admin_change_passwd, NULL);
 			menu.append("Fermer la session", 'N', NULL, NULL, true);
 			

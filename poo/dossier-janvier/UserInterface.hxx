@@ -2,10 +2,11 @@
 	#define __UI_H
 	
 	#include <iostream>
-	#include <cstring>
+	#include <string>
 	#include <termios.h>
 	
 	#define FILENAME_LOGIN		"etc/Login.txt"
+	#define FILENAME_LOGIN_TEMP	"/tmp/login.rewrite.temp"
 	
 	#define ADMIN_DEFAULT_PASSWORD	"admin"
 	
@@ -25,9 +26,12 @@
 			void disable_echo();
 			void restore_echo();
 			
-			int check_login();
+			int check_login(string login);
+			int check_login_exists(string login);
 			
 			inline int anti_flood(int value);
+			
+			int user_level(string username);
 			
 			void prepare();
 			int start_events();
