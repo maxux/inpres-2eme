@@ -13,7 +13,7 @@ int restore_console(tcflag_t *c_lflag) {
 	/* Restoring */
 	tty_attr.c_lflag = *c_lflag;
 
-	if(tcsetattr(STDIN_FILENO, 0, &tty_attr) < 0)
+	if(tcsetattr(STDIN_FILENO, TCSANOW, &tty_attr) < 0)
 		return -1;
 	
 	return 0;
@@ -31,8 +31,8 @@ int disable_echo(tcflag_t *c_lflag) {
 	/* Changing */
 	// tty_attr.c_lflag &= ~ICANON;
 	tty_attr.c_lflag &= ~ECHO;
-
-	if(tcsetattr(STDIN_FILENO, 0, &tty_attr) < 0)
+	
+	if(tcsetattr(STDIN_FILENO, TCSANOW, &tty_attr) < 0)
 		return -1;
 	
 	return 0;
