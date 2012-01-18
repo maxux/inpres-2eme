@@ -27,7 +27,6 @@
 	} menu_node_t;
 	
 	menu_t * menu_create(char *title, int exit_id);
-	// void menu_append(menu_t *menu, char *entry, int id, int (*pointer)(FICHIERVAR*), FICHIERVAR *argument);
 	void menu_append(menu_t *menu, char *entry, int id, int (*pointer)(void), void *argument);
 	int menu_process(menu_t *menu);
 	void menu_free(menu_t *menu);

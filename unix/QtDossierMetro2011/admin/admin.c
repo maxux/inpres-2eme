@@ -66,17 +66,8 @@ void sig_handler(int signum) {
 			send_message(ACK_PONG, (void*) "Pong !", 0);
 		break;
 		
-		/* SIGUSR1: New ads */
-		case SIGUSR1:
-			// 
-		break;
-		
-		case SIGUSR2:
-			// 
-		break;
-		
 		case SIGINT:
-			// 
+			longjmp(sys.jump_buffer, SIGINT);
 		break;
 	}
 }
@@ -342,6 +333,9 @@ int main(void) {
 	/* Intercept SIGPWR: Ping Query */
 	signal_intercept(SIGPWR, sig_handler);
 	
+	/* Intercept SIGINT: Closing */
+	signal_intercept(SIGINT, sig_handler);
+	
 	menu = menu_create("Administration Dossier Unix 2011 - Menu Principal", 9);
 	menu_append(menu, "Message administrateur", 1, admin_message, NULL);
 	menu_append(menu, "Désactiver une station", 2, disable_station, NULL);
@@ -353,12 +347,16 @@ int main(void) {
 	menu_append(menu, "Quitter l'administration", 9, NULL, NULL);
 	
 	/* Menu Process */
-	while(menu_process(menu));
+	if(!setjmp(sys.jump_buffer))
+		while(menu_process(menu));
+	
+	/* Clearing Menu */
 	menu_free(menu);
-
 	
-	send_message(QRY_LOGOUT, (void*) "I leave thx", 0);
+	/* Closing Control Link */
+	send_message(QRY_LOGOUT, (void*) "I leave thx", 0);	
 	
+	/* Closing log file */
 	fclose(sys.log);
 	
 	return 0;

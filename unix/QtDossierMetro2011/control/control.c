@@ -107,11 +107,8 @@ int main(void) {
 	/* Clearing Shared Memory Segment */
 	memset(shm, '\0', SHARED_MEMORY_SIZE);
 	
-	// DEBUG
+	/* Fallback safe message */
 	strcpy(shm, "Advertissment");
-		
-	/* Init Process Group */
-	// debug("DBG: Control PID: %d\n", (int) getpid());
 	
 	/* Starting threads */
 	debug("THR: Threading ads processing...\n");
@@ -528,6 +525,7 @@ int signal_intercept(int signal, void (*function)(int)) {
 	/* Building Signal */
 	sig.sa_handler	 = function;
 	
+	/* Ignoring Zombies Process */
 	if(signal == SIGCHLD)
 		sig.sa_flags	 = SA_NOCLDWAIT;
 		

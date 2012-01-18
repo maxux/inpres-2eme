@@ -70,12 +70,6 @@
 		
 	} station_t;
 	
-	/* typedef struct {
-		int visite;
-		int suivant[6];
-		
-	} metro_nodes_t; */
-	
 	typedef struct ads_struct_t {
 		int timeout;
 		char message[ADS_MAX_LENGTH];
