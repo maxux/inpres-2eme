@@ -1,5 +1,5 @@
 #include "Person.hxx"
-#include <string.h>
+#include <cstring>
 
 using namespace std;
 
@@ -74,10 +74,17 @@ const char * Person::getNationalite() {
 
 /* Overload */
 void Person::Affiche(ostream &stream) const {
-	stream << "Nom     : " << _name << endl;
-	stream << "Prénom  : " << _surname << endl;
-	stream << "Nationa : " << _nation << endl;
-	stream << "Born on : " << _born << endl << endl;
+	if(stream == cout) {
+		stream << "Nom     : " << _name << endl;
+		stream << "Prénom  : " << _surname << endl;
+		stream << "Nationa : " << _nation << endl;
+		stream << "Born on : " << _born << endl << endl;
+	} else {
+		stream << _name << endl;
+		stream << _surname << endl;
+		stream << _nation << endl;
+		stream << _born << endl << endl;
+	}
 }
 
 ostream & operator << (ostream &stream, Person const &source) {
@@ -86,19 +93,24 @@ ostream & operator << (ostream &stream, Person const &source) {
 }
 
 void Person::Encode(istream &stream) {
-	cout << "Nom     : ";
+	if(stream == cin)
+		cout << "Nom     : ";
 	stream >> _name;
 	
-	cout << "Prénom  : ";
+	if(stream == cin)
+		cout << "Prénom  : ";
 	stream >> _surname;
 	
-	cout << "Born on : ";
+	if(stream == cin)
+		cout << "Born on : ";
 	stream >> _born;
 	
-	cout << "Nationa : ";
+	if(stream == cin)
+		cout << "Nationa : ";
 	stream >> _nation;
 	
-	cout << endl;
+	if(stream == cin)
+		cout << endl;
 }
 
 istream & operator >> (istream &stream, Person &source) {

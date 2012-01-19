@@ -15,7 +15,7 @@
 			virtual void setLogin(const char *login);
 			
 			/* Getters */
-			virtual const char * getLogin();
+			virtual const char * getLogin() const;
 		
 		private:
 			char _login[32];

@@ -4,14 +4,16 @@
 	#include <iostream>
 	#include <cstring>
 	
+	#include "LinkCarte.hxx"
+	
 	using namespace std;
 	
 	typedef struct UIMenu_item {
 		string name;
 		char key;
 		
-		int (*pointer)(void*);
-		void *argument;
+		int (*pointer)(LinkCarte*);
+		LinkCarte *argument;
 		
 		struct UIMenu_item *next;
 		
@@ -20,10 +22,10 @@
 	class UIMenu : public UI {
 		public:
 			UIMenu();
-			~UIMenu();
+			virtual ~UIMenu();
 			
 			void create(const char *name);
-			void append(const char *label, char key, int (*ptr)(void*), void *arg, bool endkey = 0);
+			void append(const char *label, char key, int (*ptr)(LinkCarte *), LinkCarte *arg, bool endkey = 0);
 			
 			int process();
 			int select(char key);

@@ -67,8 +67,10 @@ void Collectionneur::Affiche() {
 void Collectionneur::Affiche(ostream &stream) const {
 	Person::Affiche(stream);
 	
-	// stream << "Nom     : " << _name << endl;
-	stream << "Nb Coll : " << _nb_collection << endl;
+	if(stream == cout)
+		stream << "Nb Coll : " << _nb_collection << endl;
+		
+	else stream << _nb_collection << endl;
 }
 
 ostream & operator << (ostream &stream, Collectionneur const &source) {
@@ -82,8 +84,9 @@ void Collectionneur::Encode(istream &stream) {
 	stream >> _name; */
 	Person::Encode(stream);
 	
-	cout << "Nb Coll : ";
-	stream >> _nb_collection;
+	// cout << "Nb Coll : ";
+	// stream >> _nb_collection;
+	_nb_collection = 0;
 }
 
 istream & operator >> (istream &stream, Collectionneur &source) {

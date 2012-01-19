@@ -1,7 +1,12 @@
 #include <iostream>
-#include <termios.h>
 #include <string>
 #include <fstream>
+#include <termios.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
+#include "LinkCarte.hxx"
 
 #include "UserInterface.hxx"
 #include "UserInterfaceMenu.hxx"
@@ -42,6 +47,10 @@ int UI::check_login_exists(string login) {
 	
 	/* Reading each lines */
 	while(passfile >> line) {
+		/* Skip wrong line */
+		if(line == ":")
+			break;
+			
 		tok = strtok((char*) line.c_str(), ":");
 		read_user = tok;
 		
@@ -68,6 +77,10 @@ int UI::check_login(string login) {
 	
 	/* Reading each lines */
 	while(passfile >> line) {
+		/* Skip wrong line */
+		if(line == ":")
+			break;
+			
 		tok = strtok((char*) line.c_str(), ":");
 		read_user = tok;
 		
@@ -101,11 +114,22 @@ inline int UI::anti_flood(int value) {
 }
 
 int UI::user_level(string username) {
-	if(username == "admin") {
-		return USER_LEVEL_ADMIN;
-	}
+	struct stat statbuff;
+	string pathcheck;
 	
-	return USER_LEVEL_COLLECT;
+	/* If admin */
+	if(username == "admin")
+		return USER_LEVEL_ADMIN;
+	
+	/* Building collectionneur filename */
+	pathcheck = PATH_DATA + username + ".co";
+	
+	/* Checking if Collectionneur */
+	if(!stat(pathcheck.c_str(), &statbuff))
+		return USER_LEVEL_COLLECT;
+	
+	/* Fallback to ConcepteurAlbum */
+	return USER_LEVEL_DESIGNER;
 }
 
 void UI::prepare() {
@@ -113,13 +137,11 @@ void UI::prepare() {
 	_level = user_level(_login);	
 }
 
-int dummy(void*) {
-	cout << "DUMMY" << endl;
-	return 0;
-}
-
-int UI::start_events() {
+int UI::start_events(LinkCarte *origin) {
 	UIMenu menu;
+	string title, temp;
+	
+	origin->_login = _login;
 	
 	switch(_level) {
 		case USER_LEVEL_ADMIN:
@@ -128,7 +150,7 @@ int UI::start_events() {
 			menu.append("Afficher la liste des utilisateurs", '1', admin_display_userlist, NULL);
 			menu.append("Afficher les infos d'un utilisateur", '2', admin_display_userinfo, NULL);
 			menu.append("Créer un collectionneur", '3', admin_add_collect, NULL);
-			menu.append("Créer un concepteur d'album", '4', admin_add_designer, NULL);
+			menu.append("Créer un concepteur d'album", '4', admin_add_designer, origin);
 			menu.append("Changer le mot de passe administrateur", '5', admin_change_passwd, NULL);
 			menu.append("Fermer la session", 'N', NULL, NULL, true);
 			
@@ -136,21 +158,32 @@ int UI::start_events() {
 		break;
 		
 		case USER_LEVEL_DESIGNER:
-			menu.create("Concepteur d'album - ");
+			// Preparing environment
+			origin->setIteratorDesigner(_login);
+			origin->_alb = NULL;
 			
-			menu.append("Sélectionner un album courant", '1', NULL, NULL);
-			menu.append("Ajouter une carte", '2', dummy, NULL);
-			menu.append("Afficher l'album", '3', NULL, NULL);
+			// Settign name
+			temp = (*origin->_cit)->getNom();
+			
+			title = "Concepteur d'album - " + temp;
+			menu.create(title.c_str());
+			
+			menu.append("Créer un nouvel album", '1', designer_create_album, origin);
+			menu.append("Charger un album", '2', designer_load_album, origin);
+			menu.append("Charger un de mes albums", '3', designer_load_custom, origin);
+			menu.append("Ajouter une carte", '4', designer_add_card, origin);
+			menu.append("Afficher l'album", '5', designer_display_album, origin);
 			menu.append("Fermer la session", 'N', NULL, NULL, true);
 			
 			return menu.process();
 		break;
 		
 		case USER_LEVEL_COLLECT:
-			menu.create("Collectionneur - ");
+			title = "Collectionneur - " + _login;
+			menu.create(title.c_str());
 			
 			menu.append("Sélectionner une carte courante", '1', NULL, NULL);
-			menu.append("Pour la collection courante", '2', dummy, NULL);
+			menu.append("Pour la collection courante", '2', NULL, NULL);
 			menu.append("Afficher la liste de mes collections", '3', NULL, NULL);
 			menu.append("Comparer deux collections", '4', NULL, NULL);
 			menu.append("Fermer la session", 'N', NULL, NULL, true);
@@ -159,7 +192,7 @@ int UI::start_events() {
 		break;
 		
 		default:
-			cerr << "Wrong userlevel this should not arrive !" << endl;
+			cerr << "Wrong userlevel, this is not normal !" << endl;
 			return 1;
 	}
 }
@@ -178,7 +211,7 @@ void UI::disable_echo() {
 	// tty_attr.c_lflag &= ~ICANON;
 	tty_attr.c_lflag &= ~ECHO;
 
-	if(tcsetattr(STDIN_FILENO, 0, &tty_attr) < 0)
+	if(tcsetattr(STDIN_FILENO, TCSANOW, &tty_attr) < 0)
 		return;
 }
 
@@ -191,6 +224,6 @@ void UI::restore_echo() {
 	/* Restoring state */
 	tty_attr.c_lflag = c_lflag;
 
-	if(tcsetattr(STDIN_FILENO, 0, &tty_attr) < 0)
+	if(tcsetattr(STDIN_FILENO, TCSANOW, &tty_attr) < 0)
 		return;
 }

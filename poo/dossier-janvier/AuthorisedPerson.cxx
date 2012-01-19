@@ -18,6 +18,6 @@ void AuthorisedPerson::setLogin(const char *login) {
 	strcpy(_login, login);
 }
 
-const char * AuthorisedPerson::getLogin() {
+const char * AuthorisedPerson::getLogin() const {
 	return _login;
 }

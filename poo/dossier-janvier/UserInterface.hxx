@@ -5,8 +5,11 @@
 	#include <string>
 	#include <termios.h>
 	
+	#include "LinkCarte.hxx"
+	
 	#define FILENAME_LOGIN		"etc/Login.txt"
 	#define FILENAME_LOGIN_TEMP	"/tmp/login.rewrite.temp"
+	#define PATH_DATA		"data/"
 	
 	#define ADMIN_DEFAULT_PASSWORD	"admin"
 	
@@ -19,7 +22,7 @@
 	class UI {
 		public:
 			UI();
-			~UI();
+			virtual ~UI();
 			
 			int login();
 			
@@ -34,7 +37,7 @@
 			int user_level(string username);
 			
 			void prepare();
-			int start_events();
+			int start_events(LinkCarte *origin);
 			
 		private:
 			tcflag_t c_lflag;

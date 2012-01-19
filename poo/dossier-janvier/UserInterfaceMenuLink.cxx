@@ -3,19 +3,28 @@
 #include <string>
 #include <fstream>
 
+#include "Album.hxx"
 #include "Collectionneur.hxx"
+#include "ConcepteurAlbum.hxx"
+
+#include "LinkCarte.hxx"
 
 #include "UserInterface.hxx"
 #include "UserInterfaceMenu.hxx"
 #include "UserInterfaceMenuLink.hxx"
 
-int admin_change_passwd(void* none) {
+
+/*
+	ADMINISTRATEUR
+*/
+
+int admin_change_passwd(LinkCarte *link) {
 	fstream passfile(FILENAME_LOGIN, fstream::in), tempfile;
 	string newpass, line, line_keep, read_user;
 	char *tok;
 	UI ui;
 	
-	none = NULL;
+	link = NULL;
 	
 	cout << "Nouveau mot de passe: ";
 	
@@ -65,11 +74,11 @@ int admin_change_passwd(void* none) {
 	return 0;
 }
 
-int admin_display_userlist(void *none) {
+int admin_display_userlist(LinkCarte *link) {
 	fstream passfile(FILENAME_LOGIN);
 	string line;
 	
-	none = NULL;
+	link = NULL;
 	
 	while(passfile >> line)
 		cout << line << endl;
@@ -79,11 +88,11 @@ int admin_display_userlist(void *none) {
 	return 0;
 }
 
-int admin_display_userinfo(void *none) {
+int admin_display_userinfo(LinkCarte *link) {
 	UI temp;
 	string user;
 	
-	none = NULL;
+	link = NULL;
 	
 	cout << "Login: ";
 	cin >> user;
@@ -113,19 +122,19 @@ string admin_add_user() {
 	
 	ui.restore_echo();
 	cout << endl;
-	
+
 	passfile << user << ":" << pass << endl;
 	passfile.close();
 	
 	return user;
 }
 
-int admin_add_collect(void *none) {
+int admin_add_collect(LinkCarte *link) {
 	Collectionneur addme;
 	fstream newuser;
 	string login, filename;
 	
-	none = NULL;
+	link = NULL;
 	
 	/* Modify userlist */
 	login = admin_add_user();
@@ -144,14 +153,140 @@ int admin_add_collect(void *none) {
 	return 0;
 }
 
-int admin_add_designer(void *none) {
-	UI ui;
-	fstream passfile(FILENAME_LOGIN, fstream::out | fstream::app);
+int admin_add_designer(LinkCarte *link) {
+	ConcepteurAlbum *addme = new ConcepteurAlbum;
 	string login;
 	
-	none = NULL;
-	
+	/* Modify userlist */
 	login = admin_add_user();
+
+	cin >> *addme;
+	addme->setLogin(login.c_str());
+	
+	link->_cit = link->_concept.insert(link->_concept.begin(), addme);
+	
+	cout << **(link->_cit);
+	
+	return 0;
+}
+
+
+
+
+/*
+	CONCEPTEUR D'ALBUM
+*/
+
+int designer_create_album(LinkCarte *link) {
+	Album *n;
+	string name;
+	
+	n = new Album;
+	
+	cout << "Nom: ";
+	cin >> name;
+	
+	n->setName(name);
+	
+	if(link->_alb)
+		link->_alb->Save();
+		
+	link->_alb = n;
+	
+	return 0;
+}
+	
+int designer_load_album(LinkCarte *link) {
+	Album *n;
+	string temp;
+	
+	if(link->_alb)
+		link->_alb->Save();
+	
+	delete link->_alb;
+	
+	n = new Album;
+	link->_alb = n;
+	
+	cout << "Nom: ";
+	cin >> temp;
+	link->_alb->Load(temp.c_str());
+	
+	return 0;
+}
+	
+int designer_load_custom(LinkCarte *link) {
+	link = NULL;
+	return 0;
+}
+
+int designer_add_card(LinkCarte *link) {
+	Carte *n = new Carte;
+	
+	if(link->_alb) {
+		cin >> *n;
+		link->_alb->AddCarte(n);
+		
+	} else cout << "Aucun album sélectionné" << endl;
+	
+	return 0;
+}
+
+int designer_display_album(LinkCarte *link) {
+	if(link->_alb) {
+		link->_alb->displayCards();
+		
+	} else cout << "Aucun album sélectionné" << endl;
+	
+	return 0;
+}
+
+
+/*
+	COLLECTIONNEUR
+*/
+
+int collec_add_collec(LinkCarte *link) {
+
+	return 0;
+}
+
+int collec_load_collect(LinkCarte *link) {
+	
+	return 0;
+}
+
+int collec_add_card(LinkCarte *link) {
+	
+	return 0;
+}
+
+int collec_check_full(LinkCarte *link) {
+	
+	return 0;
+}
+
+int collec_give_card(LinkCarte *link) {
+	
+	return 0;
+}
+
+int collec_display_collect(LinkCarte *link) {
+	
+	return 0;
+}
+
+int collec_display_bestcard(LinkCarte *link) {
+	
+	return 0;
+}
+
+int collec_display_lesscard(LinkCarte *link) {
+	
+	return 0;
+}
+
+int collec_display_list(LinkCarte *link) {
 	
 	return 0;
 }

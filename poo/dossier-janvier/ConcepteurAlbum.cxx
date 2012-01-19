@@ -1,6 +1,6 @@
 #include "ConcepteurAlbum.hxx"
 #include <cstdio>
-#include <string.h>
+#include <cstring>
 using namespace std;
 
 ConcepteurAlbum::ConcepteurAlbum() : AuthorisedPerson() {
@@ -54,7 +54,15 @@ const char * ConcepteurAlbum::getNomSociete() {
 /* Overload */
 void ConcepteurAlbum::Affiche(ostream &stream) const {
 	Person::Affiche(stream);
-	stream << "Nom Soci: " << _inc_name << endl;
+	
+	if(stream == cout) {
+		stream << "Nom Soci: " << _inc_name << endl;
+		stream << "Login: " << getLogin() << endl;
+	
+	} else {
+		stream << _inc_name << endl;
+		stream << getLogin() << endl;
+	}
 }
 
 ostream & operator << (ostream &stream, ConcepteurAlbum const &source) {
@@ -65,9 +73,16 @@ ostream & operator << (ostream &stream, ConcepteurAlbum const &source) {
 
 void ConcepteurAlbum::Encode(istream &stream) {
 	Person::Encode(stream);
-	
-	cout << "Nom Soci: ";
+	string temp;
+		
+	if(stream == cin)
+		cout << "Nom Soci: ";
 	stream >> _inc_name;
+	
+	if(stream != cin) {
+		stream >> temp;
+		setLogin(temp.c_str());
+	}
 }
 
 istream & operator >> (istream &stream, ConcepteurAlbum &source) {

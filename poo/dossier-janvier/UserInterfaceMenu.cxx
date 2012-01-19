@@ -32,7 +32,7 @@ void UIMenu::create(const char *name) {
 	_name = name;
 }
 
-void UIMenu::append(const char *label, char key, int (*ptr)(void*), void *arg, bool endkey) {
+void UIMenu::append(const char *label, char key, int (*ptr)(LinkCarte *), LinkCarte *arg, bool endkey) {
 	UIMenu_item *create;
 	
 	create = new UIMenu_item;
