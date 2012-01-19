@@ -19,7 +19,9 @@
 
 	/* Collectionneur Link */
 	int collec_add_collec(LinkCarte *link);
+	int collec_add_collec_name(LinkCarte *link, const char *name);
 	int collec_load_collect(LinkCarte *link);
+	int collec_load_collect_name(LinkCarte *link, const char *name);
 	int collec_add_card(LinkCarte *link);
 	int collec_check_full(LinkCarte *link);
 	int collec_give_card(LinkCarte *link);
@@ -27,6 +29,7 @@
 	int collec_display_bestcard(LinkCarte *link);
 	int collec_display_lesscard(LinkCarte *link);
 	int collec_display_list(LinkCarte *link);
+	int collec_compare(LinkCarte *link);
 #endif
 
 

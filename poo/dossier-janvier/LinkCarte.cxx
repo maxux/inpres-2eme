@@ -10,7 +10,8 @@ LinkCarte::LinkCarte() {
 	ConcepteurAlbum *temp;
 	fstream newer;
 	
-	_alb = NULL;
+	_alb  = NULL;
+	_coll = NULL;
 	
 	/* Creating user file */
 	newer.open(FILENAME_DESIGNER, fstream::in);
@@ -48,6 +49,9 @@ LinkCarte::~LinkCarte() {
 	
 	if(_alb)
 		_alb->Save();
+	
+	if(_coll)
+		_coll->Save();
 }
 
 void LinkCarte::setIteratorDesigner(string login) {

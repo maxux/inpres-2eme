@@ -168,11 +168,11 @@ int UI::start_events(LinkCarte *origin) {
 			title = "Concepteur d'album - " + temp;
 			menu.create(title.c_str());
 			
-			menu.append("Créer un nouvel album", '1', designer_create_album, origin);
-			menu.append("Charger un album", '2', designer_load_album, origin);
-			menu.append("Charger un de mes albums", '3', designer_load_custom, origin);
-			menu.append("Ajouter une carte", '4', designer_add_card, origin);
-			menu.append("Afficher l'album", '5', designer_display_album, origin);
+			menu.append("+ Créer un nouvel album", '1', designer_create_album, origin);
+			menu.append("+ Charger un album", '2', designer_load_album, origin);
+			menu.append("+ Charger un de mes albums", '3', designer_load_custom, origin);
+			menu.append("+-- Ajouter une carte", '4', designer_add_card, origin);
+			menu.append("+-- Afficher l'album", '5', designer_display_album, origin);
 			menu.append("Fermer la session", 'N', NULL, NULL, true);
 			
 			return menu.process();
@@ -182,11 +182,17 @@ int UI::start_events(LinkCarte *origin) {
 			title = "Collectionneur - " + _login;
 			menu.create(title.c_str());
 			
-			menu.append("Sélectionner une carte courante", '1', NULL, NULL);
-			menu.append("Pour la collection courante", '2', NULL, NULL);
-			menu.append("Afficher la liste de mes collections", '3', NULL, NULL);
-			menu.append("Comparer deux collections", '4', NULL, NULL);
-			menu.append("Fermer la session", 'N', NULL, NULL, true);
+			menu.append("+ Ajouter une collection", '1', collec_add_collec, origin);
+			menu.append("+ Charger une de mes collections", '2', collec_load_collect, origin);
+			menu.append("+-- Ajouter une carte", '3', collec_add_card, origin);
+			menu.append("+-- Vérifier si la collection est complète", '4', collec_check_full, origin);
+			menu.append("+-- Donner une carte", '5', collec_give_card, origin);
+			menu.append("+-- Afficher la collection", '6', collec_display_collect, origin);
+			menu.append("+-- Afficher la carte la plus forte", '7', collec_display_bestcard, origin);
+			menu.append("+-- Afficher la carte la plus faible", '8', collec_display_lesscard, origin);
+			menu.append("Afficher la liste de mes collections", '9', collec_display_list, origin);
+			menu.append("Comparer deux collections", 'A', collec_compare, origin);
+			menu.append("Fermer la session", 'N', NULL, origin, true);
 			
 			return menu.process();
 		break;

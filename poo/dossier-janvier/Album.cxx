@@ -52,7 +52,7 @@ void Album::Save() {
 	newer.close();
 }
 
-void Album::Load(const char *name) {
+int Album::Load(const char *name) {
 	fstream newer;
 	string filename;
 	Carte *temp;
@@ -75,7 +75,27 @@ void Album::Load(const char *name) {
 		}
 		
 		newer.close();
-	}
+	} else return 0;
 	
 	cout << "[+] Loaded Cards: " << _c.size() << endl;
+	return 1;
+}
+
+int Album::size() {
+	return _c.size();
+}
+
+Carte * Album::GetCarte(int id) {
+	vector <Carte *> :: iterator it;
+	
+	it = _c.begin();
+	
+	while(it != _c.end()) {
+		if((*(it))->getNumero() == id)
+			return *it;
+			
+		it++;
+	}
+	
+	return NULL;
 }

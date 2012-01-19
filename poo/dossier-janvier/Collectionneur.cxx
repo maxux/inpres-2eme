@@ -80,12 +80,7 @@ ostream & operator << (ostream &stream, Collectionneur const &source) {
 
 
 void Collectionneur::Encode(istream &stream) {
-	/* cout << "Nom     : ";
-	stream >> _name; */
 	Person::Encode(stream);
-	
-	// cout << "Nb Coll : ";
-	// stream >> _nb_collection;
 	_nb_collection = 0;
 }
 

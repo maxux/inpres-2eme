@@ -20,8 +20,8 @@ void CaractScore::__construct(const char *name, int score) {
 }
 
 void CaractScore::Affiche() const {
-	cout << "Nom   : " << _name << endl;
-	cout << "Scrore: " << _score << endl;
+	cout << "Nom Car.: " << _name << endl;
+	cout << "Scrore  : " << _score << endl;
 }
 
 void CaractScore::setNomCaract(const char *name) {

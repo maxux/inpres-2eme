@@ -2,8 +2,11 @@
 #include <termios.h>
 #include <string>
 #include <fstream>
+#include <cstdlib>
+#include <glob.h>
 
 #include "Album.hxx"
+#include "Collection.hxx"
 #include "Collectionneur.hxx"
 #include "ConcepteurAlbum.hxx"
 
@@ -165,8 +168,6 @@ int admin_add_designer(LinkCarte *link) {
 	
 	link->_cit = link->_concept.insert(link->_concept.begin(), addme);
 	
-	cout << **(link->_cit);
-	
 	return 0;
 }
 
@@ -247,46 +248,157 @@ int designer_display_album(LinkCarte *link) {
 */
 
 int collec_add_collec(LinkCarte *link) {
+	string collname;
+	
+	cout << "Nom: ";
+	cin >> collname;
+	
+	return collec_add_collec_name(link, collname.c_str());
+}
 
-	return 0;
+int collec_add_collec_name(LinkCarte *link, const char *name) {
+	Collection *c;
+	Album *a;
+	string collname;
+	
+	collname = name;
+	
+	/* Checking Album Exists */
+	a = new Album;
+	if(!a->Load(collname.c_str())) {
+		cout << "Oops: introuvable" << endl;
+		delete a;
+		
+		return 0;
+	}
+	
+	if(link->_alb)
+		link->_alb->Save();
+		
+	link->_alb = a;
+	
+	/* Creating Collection */
+	if(link->_coll != NULL)
+		link->_coll->Save();
+	
+	c = new Collection;
+	link->_coll = c;
+	
+	link->_coll->setName(collname.c_str());
+	link->_coll->setUsername(link->_login.c_str());
+	
+	return 1;
 }
 
 int collec_load_collect(LinkCarte *link) {
+	string collname;
 	
-	return 0;
+	cout << "Nom: ";
+	cin >> collname;
+	
+	return collec_load_collect_name(link, collname.c_str());
+}
+
+int collec_load_collect_name(LinkCarte *link, const char *name) {
+	if(collec_add_collec_name(link, name))
+		return link->_coll->Load(name, link);
+	else
+		return 0;
 }
 
 int collec_add_card(LinkCarte *link) {
+	string id;
+	
+	if(link->_coll) {
+		link->_alb->displayCards();
+		
+		cout << "ID: ";
+		cin >> id;
+		
+		link->_coll->AddCarte(atoi(id.c_str()), link);
+		
+	} else cout << "Aucune collection sélectionnée" << endl;
 	
 	return 0;
 }
 
 int collec_check_full(LinkCarte *link) {
+	if(link->_coll) {
+		if(link->_coll->size() == link->_alb->size())
+			cout << "Félicitation, collection complète !" << endl;
+		else
+			cout << "Hélas non, il te manque " << link->_alb->size() - link->_coll->size() << " cartes !" << endl;
+		
+	} else cout << "Aucune collection sélectionnée" << endl;
 	
 	return 0;
 }
 
 int collec_give_card(LinkCarte *link) {
+	if(link->_coll) {
+		
+		cout << "Garde tes cartes, ça peut servir plus tard !" << endl;
+		
+	} else cout << "Aucune collection sélectionnée" << endl;
 	
 	return 0;
 }
 
 int collec_display_collect(LinkCarte *link) {
+	if(link->_coll) {
+		cout << *(link->_coll);
+		
+	} else cout << "Aucune collection sélectionnée" << endl;
 	
 	return 0;
 }
 
 int collec_display_bestcard(LinkCarte *link) {
+	vector <CarteCollectionnee *> :: iterator it;
+	
+	if(link->_coll) {
+		cout << *(link->_coll->searchBest());
+		
+	} else cout << "Aucune collection sélectionnée" << endl;
 	
 	return 0;
 }
 
 int collec_display_lesscard(LinkCarte *link) {
+	if(link->_coll) {
+		cout << *(link->_coll->searchLess());
+		
+	} else cout << "Aucune collection sélectionnée" << endl;
 	
 	return 0;
 }
 
 int collec_display_list(LinkCarte *link) {
+	string pat, na;
+	glob_t glob_result;
+	unsigned int i;
 	
+	pat = PATH_DATA + link->_login + "_*.col";
+	glob(pat.c_str(), GLOB_TILDE, NULL, &glob_result);
+
+	for(i = 0; i < glob_result.gl_pathc; i++) {
+		cout << "[+] Fichier: " << glob_result.gl_pathv[i] << endl;
+		
+		/* Skip « data/ » and « username » and « _ » */
+		na = glob_result.gl_pathv[i] + strlen(PATH_DATA) + link->_login.length() + 1;
+		
+		/* Removing extension */	
+		cout << " -> " << na.substr(0, na.length() - 4) << endl;
+	}
+
+	globfree(&glob_result);
+	
+	return 0;
+}
+
+int collec_compare(LinkCarte *link) {
+	link = NULL;
+	
+	cout << "Hé ben non ! Hihi" << endl;
 	return 0;
 }

@@ -4,6 +4,7 @@
 	#include <list>
 	#include "Album.hxx"
 	#include "ConcepteurAlbum.hxx"
+	#include "Collection.hxx"
 	
 	#define FILENAME_DESIGNER	"data/concepteurs.dat"
 	
@@ -13,7 +14,10 @@
 		public:
 			list <ConcepteurAlbum*> _concept;
 			list <ConcepteurAlbum*> :: iterator _cit;
+			
 			Album *_alb;
+			
+			Collection *_coll;
 			
 			string _login;
 			

@@ -20,7 +20,10 @@
 			void displayCards();
 			
 			void Save();
-			void Load(const char *name);
+			int Load(const char *name);
+			
+			int size();
+			Carte * GetCarte(int id);
 		
 		private:
 			string _name;
