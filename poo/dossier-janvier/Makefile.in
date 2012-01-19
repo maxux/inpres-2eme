@@ -18,4 +18,4 @@ clean:
 	rm -fv *.o
 
 mrproper: clean
-	rm -fv $(EXEC) FanaDeCollections.log Cartes.txt Makefile data/*.co etc/Login.txt
+	rm -fv $(EXEC) FanaDeCollections.log Cartes.txt Makefile data/*.co etc/Login.txt data/*.col data/*.dat data/*.alb
