@@ -10,6 +10,9 @@
 #include <pthread.h>
 #include <sqlite3.h>
 
+/* Demo */
+#include <sys/sem.h>
+
 #include "metro_protocol.h"
 #include "ipc_messages.h"
 #include "control.h"
@@ -100,6 +103,12 @@ int main(void) {
 		perror("shmat");
 		return 2;
 	}
+	
+	/* Semaphore demo:
+	 * 
+	 * semkey_id = semget(semakey, 1, IPC_CREAT);
+	 * 
+	 */
 	
 	/* Linking shm to global */
 	sys.shm     = shm;
@@ -200,11 +209,13 @@ int main(void) {
 				/* Sending first ping */
 				kill(message.pid, SIGPWR);
 				
-				/* if(leader_pid == 0)
-					leader_pid = message.pid;
-				
-				if(setpgid(message.pid, leader_pid) == -1)
-					perror("setpgid"); */
+				/*
+				 * if(leader_pid == 0)
+				 * 	leader_pid = message.pid;
+				 * 
+				 * send_message(ACK_LOGIN, (void*) leader_pid, message.pid, 0);
+				 * 
+				 */
 			break;
 			
 			case QRY_METRO_MOVE:

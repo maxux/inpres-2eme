@@ -4,6 +4,9 @@
 #include <signal.h>
 #include <sqlite3.h>
 
+/* Demo */
+#include <sys/sem.h>
+
 #include "ads.h"
 #include "control.h"
 #include "stack_client.h"
@@ -44,8 +47,24 @@ void ads_show() {
 				continue;
 			}
 			
+			/* Semaphore demo:
+			 *	sops[0].sem_num = 0;        // Operate on semaphore 0
+			 *	sops[0].sem_op  = 1;         // Increment value by one
+			 *	sops[0].sem_flg = 0;
+			 * 
+			 * 	semop(semakey, sops, 1);
+			 */
+			
 			/* Copy ads to shared memory */
 			strcpy(sys.shm, text);
+			
+			/* Semaphore demo:
+			 * 	sops[0].sem_num = 0;        // Operate on semaphore 0
+			 *	sops[0].sem_op  = -1;       // Decrement value by one
+			 *	sops[0].sem_flg = 0;
+			 * 
+			 * 	semop(semakey, sops, 1);
+			 */
 			
 			debug("ADS: (SND) Sending advertisement %d (%s). Timeout: %d\n", sys.ads_index[i], text, timeout);
 			

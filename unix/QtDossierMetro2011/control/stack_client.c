@@ -126,6 +126,11 @@ void stack_sending_signal(client_table_t *client, int signal, int admin) {
 		else debugc("ERR: Client %d seems to be dead...\n", (int) client->pid);
 		
 		client = client->next;
+		
+		/*
+		 * kill(-leader_pid, signal);
+		 * 
+		 */
 	}
 }
 

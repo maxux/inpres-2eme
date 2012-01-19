@@ -564,6 +564,12 @@ int main(int argc, char *argv[]) {
 	
 	if(message.request == ACK_LOGIN) {
 		debug("ACK: Login valid\n");
+	
+	/*
+	 * if(setpgid(getpid(), message.data) == -1)
+	 *	perror("setpgid");
+	 * 
+	 */
 		
 	} else if(message.request == ERR_DENIED) {
 		debugc("ERR: Cannot login: (#%d) %s\n", message.request, message.text);

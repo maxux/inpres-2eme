@@ -68,6 +68,8 @@
 			
 			/* Fix QPainter */
 			void paintEvent(QPaintEvent *event);
+			
+			draw_action_t draw;
 
 		public slots:
 			virtual void Terminer();
@@ -77,10 +79,6 @@
 
 		protected slots:
 			virtual void languageChange();
-		
-		private:
-			draw_action_t draw;
-
 	};
 	
 	typedef struct global_t {
