@@ -18,7 +18,7 @@ Collection::~Collection() {
 int Collection::Load(const char *name, LinkCarte *link) {
 	fstream newer;
 	string filename;
-	vector <CarteCollectionnee *> :: iterator it;
+	MonVecteur <CarteCollectionnee *> :: iterator it;
 	CarteCollectionnee *temp;
 	
 	_name = name;
@@ -52,7 +52,7 @@ int Collection::Load(const char *name, LinkCarte *link) {
 void Collection::Save() {
 	fstream newer;
 	string filename;
-	vector <CarteCollectionnee *> :: iterator it;
+	MonVecteur <CarteCollectionnee *> :: iterator it;
 	
 	filename = PATH_DATA + _user + "_" + _name + ".col";
 	
@@ -80,7 +80,7 @@ int Collection::size() {
 }
 
 void Collection::AddCarte(int id, LinkCarte *link) {
-	vector <CarteCollectionnee *> :: iterator it;
+	MonVecteur <CarteCollectionnee *> :: iterator it;
 	CarteCollectionnee *n;
 	Carte *c;
 	
@@ -107,7 +107,7 @@ void Collection::AddCarte(int id, LinkCarte *link) {
 	_cards.insert(_cards.end(), n);
 }
 
-int Collection::GetCarte(int id, vector <CarteCollectionnee *> :: iterator *it) {
+int Collection::GetCarte(int id, MonVecteur <CarteCollectionnee *> :: iterator *it) {
 	*it = _cards.begin();
 	
 	while(*it != _cards.end()) {
@@ -121,7 +121,7 @@ int Collection::GetCarte(int id, vector <CarteCollectionnee *> :: iterator *it) 
 }
 
 Carte * Collection::searchBest() {
-	vector <CarteCollectionnee *> :: iterator it;
+	MonVecteur <CarteCollectionnee *> :: iterator it;
 	Carte *max;
 	
 	it = _cards.begin();
@@ -138,7 +138,7 @@ Carte * Collection::searchBest() {
 }
 
 Carte * Collection::searchLess() {
-	vector <CarteCollectionnee *> :: iterator it;
+	MonVecteur <CarteCollectionnee *> :: iterator it;
 	Carte *min;
 	
 	it = _cards.begin();
@@ -156,7 +156,7 @@ Carte * Collection::searchLess() {
 
 /* Overload */
 void Collection::Affiche(ostream &stream) const {
-	vector <CarteCollectionnee *> :: const_iterator it;
+	MonVecteur <CarteCollectionnee *> :: const_iterator it;
 	
 	it = _cards.begin();
 	while(it != _cards.end()) {
@@ -172,7 +172,7 @@ ostream & operator << (ostream &stream, Collection const &source) {
 
 
 void Collection::Encode(istream &stream) {
-	vector <CarteCollectionnee *> :: iterator it;
+	MonVecteur <CarteCollectionnee *> :: iterator it;
 	
 	it = _cards.begin();
 	while(it != _cards.end()) {

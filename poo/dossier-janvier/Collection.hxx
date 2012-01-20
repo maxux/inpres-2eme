@@ -3,8 +3,8 @@
 	
 	#include "Carte.hxx"
 	#include "CarteCollectionnee.hxx"
+	#include "MyContainers.hxx"
 	
-	#include <vector>
 	#include <iostream>
 	#include <string>
 	
@@ -32,14 +32,14 @@
 			int size();
 			void AddCarte(int id, LinkCarte *link);
 			
-			int GetCarte(int id, vector <CarteCollectionnee *> :: iterator *it);
+			int GetCarte(int id, MonVecteur <CarteCollectionnee *> :: iterator *it);
 			
 			Carte * searchBest();
 			Carte * searchLess();
 			
 		private:
-			vector <CarteCollectionnee *> _cards;
-			vector <CarteCollectionnee *> :: iterator _cit;
+			MonVecteur <CarteCollectionnee *> _cards;
+			MonVecteur <CarteCollectionnee *> :: iterator _cit;
 			string _name;
 			string _user;
 	};

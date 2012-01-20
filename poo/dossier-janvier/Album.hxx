@@ -2,8 +2,8 @@
 	#define __ALBUM_HEADER_H
 	
 	#include "Carte.hxx"
+	#include "MyContainers.hxx"
 	#include <iostream>
-	#include <vector>
 	
 	using namespace std;
 
@@ -27,6 +27,6 @@
 		
 		private:
 			string _name;
-			vector <Carte*> _c;
+			MonVecteur <Carte*> _c;
 	};
 #endif

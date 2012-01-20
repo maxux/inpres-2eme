@@ -1,3 +1,4 @@
+#include "MyContainers.hxx"
 #include "Album.hxx"
 #include "UserInterface.hxx"
 #include <fstream>
@@ -24,7 +25,7 @@ void Album::AddCarte(Carte* card) {
 }
 
 void Album::displayCards() {
-	vector <Carte *> :: iterator it;
+	MonVecteur <Carte *> :: iterator it;
 	
 	it = _c.begin();
 	
@@ -37,7 +38,7 @@ void Album::displayCards() {
 void Album::Save() {
 	fstream newer;
 	string filename;
-	vector <Carte *> :: iterator it;
+	MonVecteur <Carte *> :: iterator it;
 	
 	filename = PATH_DATA + _name + ".alb";
 	
@@ -87,7 +88,7 @@ int Album::size() {
 }
 
 Carte * Album::GetCarte(int id) {
-	vector <Carte *> :: iterator it;
+	MonVecteur <Carte *> :: iterator it;
 	
 	it = _c.begin();
 	

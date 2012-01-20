@@ -2,6 +2,7 @@
 #include <string>
 #include <fstream>
 
+#include "MyContainers.hxx"
 #include "LinkCarte.hxx"
 #include "Collectionneur.hxx"
 #include "ConcepteurAlbum.hxx"	
@@ -56,7 +57,7 @@ LinkCarte::~LinkCarte() {
 
 void LinkCarte::setIteratorDesigner(string login) {
 	string temp;
-	list <ConcepteurAlbum*> :: iterator it;
+	MaListe <ConcepteurAlbum*> :: iterator it;
 	
 	it = _concept.begin();
 	_cit = _concept.begin();

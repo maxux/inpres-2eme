@@ -1,7 +1,7 @@
 #ifndef __LINK_CARTE_H
 	#define __LINK_CARTE_H
 	
-	#include <list>
+	#include "MyContainers.hxx"
 	#include "Album.hxx"
 	#include "ConcepteurAlbum.hxx"
 	#include "Collection.hxx"
@@ -12,8 +12,8 @@
 	
 	class LinkCarte {
 		public:
-			list <ConcepteurAlbum*> _concept;
-			list <ConcepteurAlbum*> :: iterator _cit;
+			MaListe <ConcepteurAlbum*> _concept;
+			MaListe <ConcepteurAlbum*> :: iterator _cit;
 			
 			Album *_alb;
 			

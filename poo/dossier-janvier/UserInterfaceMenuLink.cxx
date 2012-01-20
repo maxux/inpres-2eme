@@ -405,7 +405,7 @@ int collec_display_collect(LinkCarte *link) {
 }
 
 int collec_display_bestcard(LinkCarte *link) {
-	vector <CarteCollectionnee *> :: iterator it;
+	MonVecteur <CarteCollectionnee *> :: iterator it;
 	
 	if(link->_coll) {
 		cout << *(link->_coll->searchBest());
