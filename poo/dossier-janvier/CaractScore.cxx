@@ -97,10 +97,10 @@ ostream & operator << (ostream &stream, CaractScore const &caract) {
 void CaractScore::Encode(istream &stream) {
 	int temp;
 	
-	cout << "Nom: ";
+	cout << "Nom Car.: ";
 	stream >> _name;
 	
-	cout << "Score: ";
+	cout << "Score   : ";
 	stream >> temp;
 	
 	/* while ... ? */

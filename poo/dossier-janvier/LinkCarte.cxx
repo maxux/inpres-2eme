@@ -37,7 +37,7 @@ LinkCarte::LinkCarte() {
 LinkCarte::~LinkCarte() {
 	fstream newer;
 	
-	/* Creating user file */
+	/* Creating designer file */
 	newer.open(FILENAME_DESIGNER, fstream::out);
 	
 	/* Saving data */

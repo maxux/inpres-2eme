@@ -140,6 +140,7 @@ void UI::prepare() {
 int UI::start_events(LinkCarte *origin) {
 	UIMenu menu;
 	string title, temp;
+	int code;
 	
 	origin->_login = _login;
 	
@@ -154,7 +155,7 @@ int UI::start_events(LinkCarte *origin) {
 			menu.append("Changer le mot de passe administrateur", '5', admin_change_passwd, NULL);
 			menu.append("Fermer la session", 'N', NULL, NULL, true);
 			
-			return menu.process();
+			code = menu.process();
 		break;
 		
 		case USER_LEVEL_DESIGNER:
@@ -169,13 +170,13 @@ int UI::start_events(LinkCarte *origin) {
 			menu.create(title.c_str());
 			
 			menu.append("+ Créer un nouvel album", '1', designer_create_album, origin);
-			menu.append("+ Charger un album", '2', designer_load_album, origin);
-			menu.append("+ Charger un de mes albums", '3', designer_load_custom, origin);
+			menu.append("+ Charger un album", '2', designer_load_custom, origin);
+			menu.append("+ Charger un de mes albums", '3', designer_load_album, origin);
 			menu.append("+-- Ajouter une carte", '4', designer_add_card, origin);
 			menu.append("+-- Afficher l'album", '5', designer_display_album, origin);
 			menu.append("Fermer la session", 'N', NULL, NULL, true);
 			
-			return menu.process();
+			code = menu.process();
 		break;
 		
 		case USER_LEVEL_COLLECT:
@@ -194,13 +195,23 @@ int UI::start_events(LinkCarte *origin) {
 			menu.append("Comparer deux collections", 'A', collec_compare, origin);
 			menu.append("Fermer la session", 'N', NULL, origin, true);
 			
-			return menu.process();
+			code = menu.process();
 		break;
 		
 		default:
 			cerr << "Wrong userlevel, this is not normal !" << endl;
-			return 1;
+			code = 1;
 	}
+	
+	if(origin->_alb) {
+		origin->_alb->Save();
+		delete origin->_alb;
+	}
+	
+	if(origin->_coll)
+		origin->_coll->Save();
+	
+	return code;
 }
 
 /* Console Handling */

@@ -78,6 +78,7 @@ int Album::Load(const char *name) {
 	} else return 0;
 	
 	cout << "[+] Loaded Cards: " << _c.size() << endl;
+	
 	return 1;
 }
 

@@ -86,8 +86,10 @@ void Collection::AddCarte(int id, LinkCarte *link) {
 	
 	c = link->_alb->GetCarte(id);
 	
-	if(!c)
+	if(!c) {
 		cout << "Carte introuvable" << endl;
+		return;
+	}
 		
 	if(GetCarte(id, &it)) {
 		(*it)->increment();

@@ -217,7 +217,58 @@ int designer_load_album(LinkCarte *link) {
 }
 	
 int designer_load_custom(LinkCarte *link) {
-	link = NULL;
+	Album *a;
+	Carte *n;
+	string name, fname, line, work, work2;
+	char *tok;
+	fstream inp;
+	
+	a = new Album;
+	
+	cout << "Nom : ";
+	cin >> name;
+	
+	fname = PATH_DATA + name + ".db";
+	inp.open(fname.c_str(), fstream::in);
+	
+	if(inp.is_open()) {
+		if(link->_alb)
+			link->_alb->Save();
+		
+		a->setName(name);
+		link->_alb = a;
+			
+		while(inp >> line) {
+			n = new Carte;
+			
+			tok = strtok((char*) line.c_str(), ":");
+			work = tok;
+			
+			cout << "Ajout de #" << atoi(work.c_str());
+			n->setNumero(atoi(work.c_str()));
+			
+			tok = strtok(NULL, ":");
+			work = tok;
+			cout << ": " << work << endl;
+			n->setNomCarte(work.c_str());
+			
+			tok = strtok(NULL, ":");
+			work = tok;
+			n->setNomSerie(work.c_str());
+			
+			tok = strtok(NULL, ":");
+			work = tok;
+			
+			tok = strtok(NULL, ":");
+			work2 = tok;
+			
+			n->setCaractScore(work.c_str(), atoi(work2.c_str()));
+		
+			link->_alb->AddCarte(n);
+		}		
+		
+	} else cout << "Fichier introuvalble" << endl;
+	
 	return 0;
 }
 
@@ -272,15 +323,15 @@ int collec_add_collec_name(LinkCarte *link, const char *name) {
 		return 0;
 	}
 	
-	if(link->_alb)
-		link->_alb->Save();
+	/* if(link->_alb)
+		link->_alb->Save(); */
 		
 	link->_alb = a;
 	
 	/* Creating Collection */
-	if(link->_coll != NULL)
-		link->_coll->Save();
-	
+	/* if(link->_coll != NULL)
+		link->_coll->Save(); */
+	 
 	c = new Collection;
 	link->_coll = c;
 	
@@ -379,7 +430,7 @@ int collec_display_list(LinkCarte *link) {
 	unsigned int i;
 	
 	pat = PATH_DATA + link->_login + "_*.col";
-	glob(pat.c_str(), GLOB_TILDE, NULL, &glob_result);
+	glob(pat.c_str(), GLOB_NOCHECK, NULL, &glob_result);
 
 	for(i = 0; i < glob_result.gl_pathc; i++) {
 		cout << "[+] Fichier: " << glob_result.gl_pathv[i] << endl;
