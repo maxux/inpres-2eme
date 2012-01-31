@@ -11,11 +11,13 @@
 #include <setjmp.h>
 #include <signal.h>
 #include <time.h>
+#include <string.h>
 
 #include "producteur.h"
 
 #define SDISPO_NAME	"sema_dispo_danielancia"
 #define SPROD_NAME	"sema_prod_danielancia"
+#define SHM_NAME	"shm_danielancia"
 
 #define MAX_PLACE	20
 
@@ -23,7 +25,9 @@ jmp_buf jump_buffer;
 
 int main(void) {
 	sem_t *sema_prod, *sema_dispo;
+	int shm;
 	int i, waittime;
+	char *shmarea;
 	
 	printf("[+] Initializing semaphores\n");
 	
@@ -38,6 +42,22 @@ int main(void) {
 		perror("(dispo) sem_open");
 		exit(EXIT_FAILURE);
 	}
+	
+	printf("[+] Initializing shared memory\n");
+	
+	/* Opening Shared Memory Area */
+	if((shm = shm_open(SHM_NAME, O_RDWR | O_CREAT | O_TRUNC, 664)) == -1) {
+		perror("shm_open");
+		exit(EXIT_FAILURE);
+	}
+	
+	if((shmarea = mmap(NULL, 8192, PROT_READ | PROT_WRITE, MAP_SHARED, shm, 0)) == (void *) -1) {
+		perror("mmap");
+		exit(EXIT_FAILURE);
+	}
+	
+	/* DEBUG */
+	strcpy(shmarea, "Hello woorld !");
 	
 	printf("[+] Intercepting signal\n");
 	
@@ -55,9 +75,18 @@ int main(void) {
 			// printf("Waiting: %d\n", waittime);
 			
 			usleep(waittime * 1000000);
-			printf("Hello world\n");
+			printf("[ ] Hello world\n");
 		}
 	}
+	
+	printf("\n[+] Closing shared memory\n");
+	
+	/* Closing Shared Memory Area */
+	if(close(shm))
+		perror("(shm) close");
+	
+	if(shm_unlink(SHM_NAME))
+		perror("shm_unlink");
 	
 	printf("[+] Closing semaphores\n");
 	
