@@ -6,7 +6,7 @@
 #include <sys/types.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
-#include <sys/fcntl.h>
+// #include <sys/fcntl.h> // WARN
 #include <fcntl.h>
 #include <setjmp.h>
 #include <signal.h>
@@ -21,24 +21,32 @@
 
 #define MAX_PLACE	20
 
+typedef int element_t;
+
+typedef struct elements_t {
+	element_t data[MAX_PLACE];
+	
+} elements_t;
+
 jmp_buf jump_buffer;
 
 int main(void) {
 	sem_t *sema_prod, *sema_dispo;
 	int shm;
 	int i, waittime;
-	char *shmarea;
+	elements_t *shmarea;
+	element_t working;
 	
 	printf("[+] Initializing semaphores\n");
 	
 	/* Opening semaphore: produit */
-	if((sema_prod = sem_open(SPROD_NAME, O_CREAT, 664, 0)) == SEM_FAILED) {
+	if((sema_prod = sem_open(SPROD_NAME, O_CREAT, 0664, 0)) == SEM_FAILED) {
 		perror("(prod) sem_open");
 		exit(EXIT_FAILURE);
 	}
 	
 	/* Opening semaphore: libre */
-	if((sema_dispo = sem_open(SDISPO_NAME, O_CREAT, 664, MAX_PLACE)) == SEM_FAILED) {
+	if((sema_dispo = sem_open(SDISPO_NAME, O_CREAT, 0664, MAX_PLACE)) == SEM_FAILED) {
 		perror("(dispo) sem_open");
 		exit(EXIT_FAILURE);
 	}
@@ -46,18 +54,25 @@ int main(void) {
 	printf("[+] Initializing shared memory\n");
 	
 	/* Opening Shared Memory Area */
-	if((shm = shm_open(SHM_NAME, O_RDWR | O_CREAT | O_TRUNC, 664)) == -1) {
+	if((shm = shm_open(SHM_NAME, O_RDWR | O_CREAT | O_TRUNC, 0664)) == -1) {
 		perror("shm_open");
 		exit(EXIT_FAILURE);
 	}
 	
-	if((shmarea = mmap(NULL, 8192, PROT_READ | PROT_WRITE, MAP_SHARED, shm, 0)) == (void *) -1) {
+	if(ftruncate(shm, sizeof(elements_t))) {
+		perror("ftruncate");
+		exit(EXIT_FAILURE);
+	}
+	
+	if((shmarea = mmap(NULL, sizeof(elements_t), PROT_READ | PROT_WRITE, MAP_SHARED, shm, 0)) == (void *) -1) {
 		perror("mmap");
 		exit(EXIT_FAILURE);
 	}
 	
-	/* DEBUG */
-	strcpy(shmarea, "Hello woorld !");
+	printf("[+] Shared address: %p\n", shmarea);
+	
+	/* Clearing struct */
+	memset(shmarea, 0x00, sizeof(elements_t));
 	
 	printf("[+] Intercepting signal\n");
 	
@@ -69,14 +84,38 @@ int main(void) {
 	
 	printf("[+] Working\n");
 	
+	/* Set Jump point, used on SIG___ */
 	if(!setjmp(jump_buffer)) {
 		for(i = 0; i < 30; i++) {
 			waittime = ((rand() % 4) + 1);
 			// printf("Waiting: %d\n", waittime);
 			
 			usleep(waittime * 1000000);
-			printf("[ ] Hello world\n");
+			printf("[ ] ID: %d\n", i);
+			
+			if(sem_wait(sema_dispo)) {
+				perror("sem_post");
+				exit(EXIT_FAILURE);
+			}
+			
+			working = rand() % 42;
+			shmarea->data[i % MAX_PLACE] = working;
+			
+			if(sem_post(sema_prod)) {
+				perror("sem_post");
+				exit(EXIT_FAILURE);
+			}
 		}
+	}
+	
+	printf("[+] Waiting end of task...\n");
+	while(!sem_getvalue(sema_dispo, &i)) {
+		printf("[ ] Remain: %d\n", MAX_PLACE - i);
+		
+		if(i < MAX_PLACE)
+			usleep(200000);
+			
+		else break;
 	}
 	
 	printf("\n[+] Closing shared memory\n");

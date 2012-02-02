@@ -3,15 +3,15 @@ UNAME := $(shell uname)
 ifeq ($(UNAME), Linux)
 
 CC      = gcc
-CFLAGS  = -lrt
-LDFLAGS = -lrt
+CFLAGS  = -lrt -W -Wall -O2
+LDFLAGS = -lrt -W -Wall -O2
 
 endif
 ifeq ($(UNAME), QNX)
 
 CC      = qcc
-CFLAGS  = 
-LDFLAGS = 
+CFLAGS  = -W -Wall -O2
+LDFLAGS = -W -Wall -O2
 
 endif
 
