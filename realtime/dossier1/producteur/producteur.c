@@ -6,7 +6,6 @@
 #include <sys/types.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
-// #include <sys/fcntl.h> // WARN
 #include <fcntl.h>
 #include <setjmp.h>
 #include <signal.h>
@@ -15,9 +14,9 @@
 
 #include "producteur.h"
 
-#define SDISPO_NAME	"sema_dispo_danielancia"
-#define SPROD_NAME	"sema_prod_danielancia"
-#define SHM_NAME	"shm_danielancia"
+#define SDISPO_NAME	"/sema_dispo_danielancia"
+#define SPROD_NAME	"/sema_prod_danielancia"
+#define SHM_NAME	"/shm_danielancia"
 
 #define MAX_PLACE	20
 

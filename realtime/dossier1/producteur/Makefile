@@ -10,8 +10,8 @@ endif
 ifeq ($(UNAME), QNX)
 
 CC      = qcc
-CFLAGS  = -W- Wall -O2
-LDFLAGS = -W- Wall -O2
+CFLAGS  = -W -Wall -O2
+LDFLAGS = -W -Wall -O2
 
 endif
 
