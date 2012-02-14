@@ -15,8 +15,7 @@
 
 #include "machine-pot.h"
 
-semap_t *sems;
-sem_t *tapis, *total;
+semap_global_t *shared;
 
 int signal_intercept(int signal, void (*function)(int)) {
 	struct sigaction sig;
@@ -41,71 +40,75 @@ int signal_intercept(int signal, void (*function)(int)) {
 	return ret;
 }
 
-void spout(semap_t *sem) {
-	while(1) {
-		break;
-	}
+void spout(void *sem) {
+	return;
 }
 
-int jar(semap_t *sems, int model) {
+int jar(semap_global_t *shared, int model) {
 	int i, svalue;
 	
 	i = 0;
-			
-	printf("%p - %p - %p\n", sems, sems->total, sems->free);
-
-	/* Checking place */
-	if(sem_getvalue(sems->tapis, &svalue)) {
+	
+	/* Checking place on tapis */
+	if(sem_getvalue(&(shared->tapis), &svalue)) {
 		perror("sem_getvalue");
 		return 1;
 	}
-
-	if(sem_wait(sems->tapis))
-		perror("sem_post");
-
+	
+	printf("[ ][%05d] Place left on tapis: %d\n", (int) getpid(), svalue);
+	
 	if(svalue > 0) {
-		printf("[+] Waiting free spout\n");
+		printf("[+][%05d] Waiting free spout...\n", (int) getpid());
 		
-		/* Waiting free spout */
-		if(sem_wait((sems + i)->total) != 0) {
-			perror("sem_wait");
+		/* Decrementing tapis */
+		if(sem_wait(&(shared->tapis))) {
+			perror("sem_post");
 			return 1;
 		}
 		
-		printf("[+] Free: %d. Searching first free spout...\n", svalue);
+		if(sem_wait(&(shared->total))) {
+			perror("sem_post");
+			return 1;
+		}
 		
-		/* Searching free spout */
+		printf("[+][%05d] Searching first free spout...\n", (int) getpid());
+		
+		// Searching free spout
 		for(i = 0; i < model; i++) {
-			if(sem_getvalue((sems + i)->free, &svalue)) {
+			if(sem_getvalue(&(shared->spouts[i]), &svalue)) {
 				perror("sem_getvalue");
 				return 1;
 			}
 			
 			if(svalue == 1) {
-				printf("[+] Got it: %d !\n", i);
+				printf("[+][%05d] Got it: %d !\n", (int) getpid(), i);
 				
-				if(sem_trywait((sems + i)->total) != 0) {
-					printf(">> %d\n", errno);
-					perror("sem_trywait");
-					// return 1;
-				}
-				
-				if(sem_trywait((sems + i)->free) != 0) {
-					printf("-> %d\n", errno);
-					perror("sem_trywait");
-					// return 1;
-				}
-
-				usleep(123 * 100000);
-				
-				printf("[+] Leaving spout...\n");
-				
-				if(sem_post((sems + i)->total) != 0) {
+				/* Leaving tapis */
+				if(sem_post(&(shared->tapis)) != 0) {
 					perror("sem_post");
 					return 1;
 				}
 				
-				if(sem_post((sems + i)->free) != 0) {
+				/* Marking spout as used */
+				if(sem_wait(&(shared->spouts[i])) != 0) {
+					perror("sem_trywait");
+					return 1;
+				}
+
+				printf("[+][%05d] Fill in...\n", (int) getpid());
+
+				usleep(FILL_IN_TIME * 1000000);
+				
+				printf("[+][%05d] Leaving spout...\n", (int) getpid());
+				
+				/* Marking spout as ready */
+				if(sem_post(&(shared->spouts[i])) != 0) {
+					perror("sem_post");
+					return 1;
+				}
+				
+				/* Updating total spout status */
+				if(sem_post(&(shared->total)) != 0) {
 					perror("sem_post");
 					return 1;
 				}
@@ -113,9 +116,14 @@ int jar(semap_t *sems, int model) {
 				return 0;
 			}
 		}
+		
+		/* Should not happen */
+		printf("[-][%05d] WTF ?\n", (int) getpid());
+		return 1;
 	}
 
-	printf("[-] No free space. Dropping.\n");
+	/* Tapis full */
+	printf("[-][%05d] No free space. Dropping.\n", (int) getpid());
 }
 
 int main(int argc, char *argv[]) {
@@ -127,7 +135,7 @@ int main(int argc, char *argv[]) {
 	/* Check Machine Model */
 	if(argc > 1) {
 		model = atoi(argv[1]);
-		if(model < 0) {
+		if(model <= 0) {
 			fprintf(stderr, "[-] Invalid Model\n");
 			return 1;
 		}
@@ -138,7 +146,16 @@ int main(int argc, char *argv[]) {
 
 	/* Shared Memory */
 	printf("[+] Initializing shared memory...\n");
-	if((sems = mmap(NULL, sizeof(semap_t) * model, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0)) == (void *) -1) {
+	
+	// Mapping:
+	// [<--------------- Shared Memory --------------->]
+	//
+	// [total][tapis]   [spout_1][spout_2][spout_3][...]
+	// [<---------->]   [<---------------------------->]
+	// semap_global_t            sem_t * model
+	//
+
+	if((shared = mmap(NULL, sizeof(semap_global_t) + (sizeof(sem_t) * model), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0)) == (void *) -1) {
 		perror("mmap");
 		exit(EXIT_FAILURE);
 	}
@@ -147,27 +164,21 @@ int main(int argc, char *argv[]) {
 	printf("[+] Initializing semaphores...\n");
 	
 	/* Allocating total spout semaphores */
-	total = (sem_t*) malloc(sizeof(sem_t));
-	if(sem_init(total, 1, model)) {
+	if(sem_init(&(shared->total), 1, model)) {
 		perror("sem_init total");
 		return 1;
 	}
 	
 	/* Allocating global semaphore */
-	tapis = (sem_t*) malloc(sizeof(sem_t));
-	if(sem_init(tapis, 1, SIMUL_POT)) {
+	if(sem_init(&(shared->tapis), 1, SIMUL_POT)) {
 		perror("sem_init glob");
 		return 1;
 	}
 	
 	/* Allocating semaphores, one per machine */
 	for(i = 0; i < model; i++) {
-		(sems + i)->total = total;
-		(sems + i)->tapis = tapis;
-		(sems + i)->free  = malloc(sizeof(sem_t));
-		
 		/* Mutex: free or not */
-		if(sem_init((sems + i)->free, 1, 1)) {
+		if(sem_init(&(shared->spouts[i]), 1, 1)) {
 			perror("sem_init free");
 			return 1;
 		}
@@ -181,7 +192,7 @@ int main(int argc, char *argv[]) {
 	for(i = 0; i < model; i++) {
 		forking = fork();
 		if(forking == 0) {
-			spout(sems + i);
+			// spout(sems + i);
 			return 0;
 			
 		} else if(forking > 0) {
@@ -205,7 +216,7 @@ int main(int argc, char *argv[]) {
 		
 		forking = fork();
 		if(forking == 0) {
-			return jar(sems, model);
+			return jar(shared, model);
 			
 		} else if(forking > 0) {
 			printf("[+] Jar spawned: pid %d\n", (int) forking);

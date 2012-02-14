@@ -5,12 +5,14 @@
 	#define SIMUL_POT		5
 	
 	#define MAX_GEN_POT_TIME	5
-
-	typedef struct semap_t {
-		sem_t *free;
-		sem_t *total;
-		sem_t *tapis;
-
-	} semap_t;
+	
+	#define FILL_IN_TIME		1.23
+	
+	typedef struct semap_global_t {
+		sem_t total;
+		sem_t tapis;
+		sem_t spouts[];
+		
+	} semap_global_t;
 	
 #endif
