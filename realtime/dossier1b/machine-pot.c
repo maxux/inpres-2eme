@@ -15,6 +15,9 @@
 
 #include "machine-pot.h"
 
+semap_t *sems;
+sem_t *tapis, *total;
+
 int signal_intercept(int signal, void (*function)(int)) {
 	struct sigaction sig;
 	int ret;
@@ -40,22 +43,84 @@ int signal_intercept(int signal, void (*function)(int)) {
 
 void spout(semap_t *sem) {
 	while(1) {
-		//
 		break;
 	}
 }
 
-void jar(semap_t *sem) {
-	while(1) {
-		printf("[ ] Got spout %p\n", sem);
-		usleep(20000000);
+int jar(semap_t *sems, int model) {
+	int i, svalue;
+	
+	i = 0;
+			
+	printf("%p - %p - %p\n", sems, sems->total, sems->free);
+
+	/* Checking place */
+	if(sem_getvalue(sems->tapis, &svalue)) {
+		perror("sem_getvalue");
+		return 1;
 	}
+
+	if(sem_wait(sems->tapis))
+		perror("sem_post");
+
+	if(svalue > 0) {
+		printf("[+] Waiting free spout\n");
+		
+		/* Waiting free spout */
+		if(sem_wait((sems + i)->total) != 0) {
+			perror("sem_wait");
+			return 1;
+		}
+		
+		printf("[+] Free: %d. Searching first free spout...\n", svalue);
+		
+		/* Searching free spout */
+		for(i = 0; i < model; i++) {
+			if(sem_getvalue((sems + i)->free, &svalue)) {
+				perror("sem_getvalue");
+				return 1;
+			}
+			
+			if(svalue == 1) {
+				printf("[+] Got it: %d !\n", i);
+				
+				if(sem_trywait((sems + i)->total) != 0) {
+					printf(">> %d\n", errno);
+					perror("sem_trywait");
+					// return 1;
+				}
+				
+				if(sem_trywait((sems + i)->free) != 0) {
+					printf("-> %d\n", errno);
+					perror("sem_trywait");
+					// return 1;
+				}
+
+				usleep(123 * 100000);
+				
+				printf("[+] Leaving spout...\n");
+				
+				if(sem_post((sems + i)->total) != 0) {
+					perror("sem_post");
+					return 1;
+				}
+				
+				if(sem_post((sems + i)->free) != 0) {
+					perror("sem_post");
+					return 1;
+				}
+				
+				return 0;
+			}
+		}
+	}
+
+	printf("[-] No free space. Dropping.\n");
 }
 
 int main(int argc, char *argv[]) {
 	int model, i, j, wait, svalue;
 	pid_t forking;
-	semap_t *sems, sglob;
 	
 	printf("[+] Initializing...\n");
 	
@@ -71,35 +136,41 @@ int main(int argc, char *argv[]) {
 	
 	printf("[+] Model: %d\n", model);
 
+	/* Shared Memory */
 	printf("[+] Initializing shared memory...\n");
 	if((sems = mmap(NULL, sizeof(semap_t) * model, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0)) == (void *) -1) {
 		perror("mmap");
 		exit(EXIT_FAILURE);
 	}
 
+	/* Semaphores */
 	printf("[+] Initializing semaphores...\n");
 	
-	/* Allocating semaphores, one per machine */
-	for(i = 0; i < model; i++) {
-		(sems + i)->free = malloc(sizeof(sem_t));
-		(sems + i)->used = malloc(sizeof(sem_t));
-		
-		if(sem_init((sems + i)->free, 1, SIMUL_POT)) {
-			perror("sem_init free");
-			return 1;
-		}
-		
-		if(sem_init((sems + i)->used, 1, 0)) {
-			perror("sem_init used");
-			return 1;
-		}
+	/* Allocating total spout semaphores */
+	total = (sem_t*) malloc(sizeof(sem_t));
+	if(sem_init(total, 1, model)) {
+		perror("sem_init total");
+		return 1;
 	}
 	
 	/* Allocating global semaphore */
-	sglob = (sem_t*) malloc(sizeof(sem_t));
-	if(sem_init(sglob, model * SIMUL_POT)) {
+	tapis = (sem_t*) malloc(sizeof(sem_t));
+	if(sem_init(tapis, 1, SIMUL_POT)) {
 		perror("sem_init glob");
 		return 1;
+	}
+	
+	/* Allocating semaphores, one per machine */
+	for(i = 0; i < model; i++) {
+		(sems + i)->total = total;
+		(sems + i)->tapis = tapis;
+		(sems + i)->free  = malloc(sizeof(sem_t));
+		
+		/* Mutex: free or not */
+		if(sem_init((sems + i)->free, 1, 1)) {
+			perror("sem_init free");
+			return 1;
+		}
 	}
 	
 	/* Removing SIGCHILD */
@@ -134,25 +205,7 @@ int main(int argc, char *argv[]) {
 		
 		forking = fork();
 		if(forking == 0) {
-			// Init Cycle
-			for(i = 0; i < model; i++) {
-				/* Checking if there is place left */
-				if(sem_getvalue((sems + i)->free, &svalue)) {
-					perror("sem_getvalue");
-					return 1;
-				}
-				
-				if(svalue) {
-					
-					jar(sems + i);
-					return 0;
-					
-				} else i++;
-			}
-			
-			printf("[-] No free space. Dropping.\n");
-			
-			return 0;
+			return jar(sems, model);
 			
 		} else if(forking > 0) {
 			printf("[+] Jar spawned: pid %d\n", (int) forking);

@@ -8,7 +8,8 @@
 
 	typedef struct semap_t {
 		sem_t *free;
-		sem_t *used;
+		sem_t *total;
+		sem_t *tapis;
 
 	} semap_t;
 	
