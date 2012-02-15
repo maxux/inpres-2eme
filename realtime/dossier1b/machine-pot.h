@@ -11,7 +11,7 @@
 	typedef struct semap_global_t {
 		sem_t total;
 		sem_t tapis;
-		sem_t spouts[];
+		sem_t *spouts;
 		
 	} semap_global_t;
 	

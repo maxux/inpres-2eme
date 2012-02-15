@@ -6,7 +6,6 @@
 #include <sys/types.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
-#include <sys/fcntl.h>
 #include <signal.h>
 #include <fcntl.h>
 #include <setjmp.h>
@@ -75,7 +74,7 @@ int jar(semap_global_t *shared, int model) {
 		
 		// Searching free spout
 		for(i = 0; i < model; i++) {
-			if(sem_getvalue(&(shared->spouts[i]), &svalue)) {
+			if(sem_getvalue((sem_t *) &(shared->spouts) + (sizeof(sem_t) * i), &svalue)) {
 				perror("sem_getvalue");
 				return 1;
 			}
@@ -90,7 +89,7 @@ int jar(semap_global_t *shared, int model) {
 				}
 				
 				/* Marking spout as used */
-				if(sem_wait(&(shared->spouts[i])) != 0) {
+				if(sem_wait((sem_t *) &(shared->spouts) + (sizeof(sem_t) * i)) != 0) {
 					perror("sem_trywait");
 					return 1;
 				}
@@ -102,7 +101,7 @@ int jar(semap_global_t *shared, int model) {
 				printf("[+][%05d] Leaving spout...\n", (int) getpid());
 				
 				/* Marking spout as ready */
-				if(sem_post(&(shared->spouts[i])) != 0) {
+				if(sem_post((sem_t *) &(shared->spouts) + (sizeof(sem_t) * i)) != 0) {
 					perror("sem_post");
 					return 1;
 				}
@@ -178,7 +177,7 @@ int main(int argc, char *argv[]) {
 	/* Allocating semaphores, one per machine */
 	for(i = 0; i < model; i++) {
 		/* Mutex: free or not */
-		if(sem_init(&(shared->spouts[i]), 1, 1)) {
+		if(sem_init((sem_t *) &(shared->spouts) + (sizeof(sem_t) * i), 1, 1)) {
 			perror("sem_init free");
 			return 1;
 		}
