@@ -11,8 +11,24 @@ typedef struct thread_text_t {
 	
 } thread_text_t;
 
+pthread_mutex_t mut;
+pthread_cond_t cond;
+int nbthreads;
+
 void * thread_works(void *d) {
+	thread_text_t *t;
 	
+	t = d;
+	
+	// Waiting
+	usleep(t->timeout * 1000000);
+	printf(">> %s - %d\n", t->data, t->timeout);
+	
+	pthread_mutex_lock(&mut);
+	nbthreads--;
+	pthread_mutex_unlock(&mut);
+	
+	pthread_cond_signal(&cond);
 }
 
 void * thread_dsp_time() {
@@ -31,27 +47,46 @@ void * thread_dsp_time() {
 }
 
 int main(void) {
-	pthread_t hour;
+	pthread_t hour, *th;
+	int i;
+	thread_text_t t[] = {
+		{"Wagner", 5},
+		{"MerceD", 2},
+		{"Hello", 3},
+		{"Uhuhu", 6},
+		{"Synchro", 3},
+		{"", 0}
+	};
 	
+	system("clear");
+	printf("\n");
 	
+	/* Threading clock */
 	if(pthread_create(&hour, NULL, thread_dsp_time, NULL)) {
 		perror("pthread_create");
 		return 1;
 	}
 	
-	printf("Hello World\n");
-	printf("Hello World\n");
+	nbthreads = 0;
+	i = 0;
 	
-	pthread_join(hour, (void**) NULL);
+	while(t[i++].timeout)
+		nbthreads++;
 	
+	th = (pthread_t*) malloc(sizeof(pthread_t) * nbthreads);
+	
+	for(i = 0; i < nbthreads; i++) {
+		if(pthread_create(th+i, NULL, thread_works, &t[i])) {
+			perror("pthread_create");
+			return 1;
+		}
+	}
+	
+	pthread_mutex_lock(&mut);
+	while(nbthreads)
+		pthread_cond_wait(&cond, &mut);
 		
-	/* for(i = 0; i < 4; i++)
-		
-	
-	for(i = 0; i < 4; i++) {
-		printf("Return %d (%-10s on %-30s): %d\n", i, t_oc[i].occurence, t_oc[i].filename, *t_ret[i]);
-		free(t_ret[i]);
-	} */
+	pthread_mutex_unlock(&mut);
 	
 	return 0;
 }
