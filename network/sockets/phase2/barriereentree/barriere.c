@@ -28,9 +28,8 @@ int main(int argc, char *argv[]) {
 		perror("CreateSockets:") ;
 	else
 		fprintf(stderr, "CreateSockets %d\n", sockfd);
-	
-	printf("BarriereEntree - DANIEL Maxime - 2227\n");
 
+	printf("BarriereEntree - DANIEL Maxime - 2227\n");
 
 	/* Creating transaction */
 	printf("[ ] Heure du ticket: ");

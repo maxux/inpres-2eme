@@ -1,6 +1,6 @@
-#ifndef __TRANSACSERV_H
-	#define __TRANSACSERV_H
-
+#ifndef __TRANSAC_H
+	#define __TARNSAC_H
+	
 	typedef enum {
 		ERROR		= 0x00,
 		HEADER		= 0x01,
@@ -20,7 +20,4 @@
 		action_t action;
 		
 	} transac_t;
-	
-	#define TR_FILENAME	"transac.dat"
-	#define PLACE_MAX	99
 #endif
