@@ -623,5 +623,5 @@ void* FctThreadEventSDL(void *p)
     nanosleep(&temps,NULL); // Pour eviter la boucle infinie...
   }  
 
-  pthread_exit(NULL);
+  return p;
 }
