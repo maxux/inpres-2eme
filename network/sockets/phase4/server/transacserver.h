@@ -9,4 +9,6 @@
 	void ticket_write_header(FILE *fp, transac_t *transaction);
 	
 	transac_t ticket_read_header(FILE *fp);
+	
+	int transac_check_exists(FILE *fp, transac_t *trans);
 #endif

@@ -61,14 +61,14 @@ transac_t ticket_reserver(FILE *fp, transac_t parent) {
 	
 	transaction.placelibre--;
 	transaction.numticket++;
-	transaction.transac_id++;
 	
 	ticket_write_header(fp, &transaction);
 	
-	transaction.action = RESERVATION;	
-	transaction.heure  = parent.heure;
-	transaction.ip     = parent.ip;
-	transaction.port   = parent.port;
+	transaction.action     = RESERVATION;	
+	transaction.heure      = parent.heure;
+	transaction.ip         = parent.ip;
+	transaction.port       = parent.port;
+	transaction.transac_id = parent.transac_id;
 	
 	fseek(fp, 0, SEEK_END);
 	if(fwrite(&transaction, sizeof(transac_t), 1, fp) != 1) {
@@ -253,4 +253,16 @@ FILE * ticket_init() {
 		perror("[-] setvbuf");
 	
 	return fp;
+}
+
+int transac_check_exists(FILE *fp, transac_t *trans) {
+	transac_t temp;
+	
+	fseek(fp, sizeof(transac_t), SEEK_SET);
+	while(fread(&temp, sizeof(temp), 1, fp) == 1) {		
+		if(temp.port == trans->port && temp.ip == trans->ip && temp.transac_id == trans->transac_id)
+			return 1;
+	}
+	
+	return 0;
 }

@@ -84,8 +84,9 @@ int main(int argc, char *argv[]) {
 		while(!fgets(buffer, sizeof(buffer), stdin));
 		
 		memset(&transaction, 0, sizeof(transaction));
-		transaction.action = RESERVATION;
-		transaction.heure  = atoi(buffer);
+		transaction.action     = RESERVATION;
+		transaction.heure      = atoi(buffer);
+		transaction.transac_id = tid;
 
 		if(transaction_transmit(sockfd, &transaction, sizeof(transac_t), &psos, &psor) == 0) {
 			/* Checking response */
