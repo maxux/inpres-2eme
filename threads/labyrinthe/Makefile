@@ -6,7 +6,7 @@ CC=gcc -g -O2 -W -Wall -D SUNRAY1 -I$(ASTAR) -I$(GRILLESDL) -I /opt/guengel/incl
 # VMWARESOLARIS pour la machine virtuelle solaris fournie en debut d'annee
 
 ALL: Labyrinthe
-OBJS = $(ASTAR)/AStar.o $(GRILLESDL)/GrilleSDL.o  
+OBJS = $(ASTAR)/AStar.o $(GRILLESDL)/GrilleSDL.o GameSDL.o 
 PROGRAMS = Labyrinthe
 
 Labyrinthe:	Labyrinthe.c $(OBJS)

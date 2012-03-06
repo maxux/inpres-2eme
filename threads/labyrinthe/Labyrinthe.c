@@ -7,67 +7,7 @@
 #include "GrilleSDL.h"
 #include "AStar.h" 
 #include "Labyrinthe.h"
-
-// Dimensions de la grille de jeu
-#define NB_LIGNES   15
-#define NB_COLONNES 20
-
-// Macros utlisees dans le tableau tab mais pouvant aussi etre utlisees pour les sprites
-#define VIDE         0
-#define MUR          1
-#define PORTE        2
-#define HERO         3
-#define CLE          4
-#define SERRURE      5
-#define GARDE        6
-#define STATUE       7
-#define TRESOR       8
-#define PERLE        9
-#define MEDUSE       10
-
-// Macros associees aux sprites
-#define HERO_FACE_AVEC    31
-#define HERO_FACE_SANS    32
-#define HERO_DOS          33
-#define HERO_GAUCHE_AVEC  34
-#define HERO_GAUCHE_SANS  35
-#define HERO_DROITE_AVEC  36
-#define HERO_DROITE_SANS  37
-
-#define GARDE_FACE        51
-#define GARDE_DOS         52
-#define GARDE_GAUCHE      53
-#define GARDE_DROITE      54
-
-#define STATUE_FACE_AVEC    61
-#define STATUE_FACE_SANS    62
-#define STATUE_DOS          63
-#define STATUE_GAUCHE_AVEC  64
-#define STATUE_GAUCHE_SANS  65
-#define STATUE_DROITE_AVEC  66
-#define STATUE_DROITE_SANS  67
-
-#define SCORE               100
-#define UN                  101
-#define DEUX                102
-#define TROIS               103
-#define QUATRE              104
-#define CINQ                105
-#define SIX                 106
-#define SEPT                107
-#define HUIT                108
-#define NEUF                109
-#define ZERO                110
-#define VIES                111
-#define COEUR               112
-#define NIVEAU              113
-#define GAMEOVER            114
-
-// Macros assosiees au sens de deplacement des personnages
-#define BAS          1
-#define HAUT         2
-#define GAUCHE       3
-#define DROITE       4
+#include "GameSDL.h"
 
 int tab[NB_LIGNES][NB_COLONNES]
 ={ {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, 
@@ -85,27 +25,35 @@ int tab[NB_LIGNES][NB_COLONNES]
    {1, 0, 1, 1, 1, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 0, 0, 0, 1}, 
    {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1}, 
    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}};
-  
-void ChargementImages();
-void DessineGrilleBase();
-void Exemple();           // Fonction à supprimer
 
-typedef struct position {
-	int L;
-	int C;
+pthread_mutex_t mutexTab;
+
+POSITION positionStatues[] = {{1,1}, {1,13}, {13,1}, {13,13}, {7,7}, {1,7}, {7,1}, {7,13}, {13,7}};
+POSITION positionSerrures[] = {{6,15}, {6,16}, {6,17}, {7,15}, {7,16}, {7,17}, {8,15}, {8,16}, {8,17}};
 	
-} POSITION;
-
-POSITION positionStatues[] = {{1,1},{1,13},{13,1},{13,13},{7,7},{1,7},{7,1},{7,13},{13,7}};
-POSITION positionSerrures[] = {{6,15},{6,16},{6,17},{7,15},{7,16},{7,17},{8,15},{8,16},{8,17}};
-
 CASE position_hero    = {0, 16};
 CASE destination_hero = {0, 16};
 
 pthread_t tHero, tEvent;
-pthread_mutex_t mutexTab;
 pthread_mutex_t mutexDestination;
 pthread_cond_t condDestination;
+
+pthread_t tMaitreCles;
+pthread_mutex_t mutexNbCles;
+pthread_cond_t condNbCles;
+int nbCles = 0;
+
+// Hero's flags
+hero_flags_t heroFlags = 0;
+
+// Temporary
+int cache;
+int porteCle = 0;
+
+void diep(char *s) {
+	perror(s);
+	exit(1);
+}
 
 int main(void) {	
 	srand((unsigned)time(NULL));
@@ -128,19 +76,20 @@ int main(void) {
 	/* Randomizing main characters position */
 	position_hero.L    = (rand() % 2) ? 5 : 9;
 	destination_hero.L = position_hero.L;
+	cache 		   = VIDE;
 	
 	/* Threading threadHero */
 	printf("[+] Spawning Hero's thread\n");
-	if(pthread_create(&tHero, NULL, threadHero, NULL)) {
-		perror("[-] pthread_create");
-		return 1;
-	}
+	if(pthread_create(&tHero, NULL, threadHero, NULL))
+		diep("[-] pthread_create");
 	
 	printf("[+] Spawning threadEvent\n");
-	if(pthread_create(&tEvent, NULL, threadEvent, NULL)) {
-		perror("[-] pthread_create");
-		return 1;
-	}
+	if(pthread_create(&tEvent, NULL, threadEvent, NULL))
+		diep("[-] pthread_create");
+	
+	printf("[+] Spawning maitreCles\n");
+	if(pthread_create(&tMaitreCles, NULL, threadMaitreCles, NULL))
+		diep("[-] pthread_create");
 	
 	pthread_join(tHero, NULL);
 
@@ -152,91 +101,12 @@ int main(void) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-void ChargementImages() {
-	// Definition des sprites et de l'image de fond
-	DessineImageFond("./images/Background.bmp");
-
-	AjouteSpriteAFondTransparent(HERO_FACE_AVEC,"./images/HeroFaceAvecPerle.bmp",255,255,255);
-	AjouteSpriteAFondTransparent(HERO_FACE_SANS,"./images/HeroFaceSansPerle.bmp",255,255,255);
-	AjouteSpriteAFondTransparent(HERO_DOS,"./images/HeroDos.bmp",255,255,255);
-	AjouteSpriteAFondTransparent(HERO_GAUCHE_AVEC,"./images/HeroGaucheAvecPerle.bmp",255,255,255);
-	AjouteSpriteAFondTransparent(HERO_GAUCHE_SANS,"./images/HeroGaucheSansPerle.bmp",255,255,255);
-	AjouteSpriteAFondTransparent(HERO_DROITE_AVEC,"./images/HeroDroiteAvecPerle.bmp",255,255,255);
-	AjouteSpriteAFondTransparent(HERO_DROITE_SANS,"./images/HeroDroiteSansPerle.bmp",255,255,255);
-
-	AjouteSprite(MUR,"./images/Mur.bmp");
-	AjouteSpriteAFondTransparent(PORTE,"./images/Porte.bmp",255,255,255);
-	AjouteSpriteAFondTransparent(CLE,"./images/PerleRose.bmp",255,255,255);
-	AjouteSpriteAFondTransparent(SERRURE,"./images/Serrure.bmp",255,255,255);
-	AjouteSpriteAFondTransparent(TRESOR,"./images/Tresor.bmp",255,255,255);
-	AjouteSpriteAFondTransparent(PERLE,"./images/PerleBleue.bmp",255,255,255);
-
-	AjouteSpriteAFondTransparent(GARDE_FACE,"./images/GardeFace.bmp",255,255,255);
-	AjouteSpriteAFondTransparent(GARDE_DOS,"./images/GardeDos.bmp",255,255,255);
-	AjouteSpriteAFondTransparent(GARDE_GAUCHE,"./images/GardeGauche.bmp",255,255,255);
-	AjouteSpriteAFondTransparent(GARDE_DROITE,"./images/GardeDroite.bmp",255,255,255);
-
-	AjouteSpriteAFondTransparent(STATUE_FACE_AVEC,"./images/StatueFaceYeuxRouges.bmp",255,255,255);
-	AjouteSpriteAFondTransparent(STATUE_FACE_SANS,"./images/StatueFaceYeuxVerts.bmp",255,255,255);
-	AjouteSpriteAFondTransparent(STATUE_DOS,"./images/StatueDos.bmp",255,255,255);
-	AjouteSpriteAFondTransparent(STATUE_GAUCHE_AVEC,"./images/StatueGaucheYeuxRouges.bmp",255,255,255);
-	AjouteSpriteAFondTransparent(STATUE_GAUCHE_SANS,"./images/StatueGaucheYeuxVerts.bmp",255,255,255);
-	AjouteSpriteAFondTransparent(STATUE_DROITE_AVEC,"./images/StatueDroiteYeuxRouges.bmp",255,255,255);
-	AjouteSpriteAFondTransparent(STATUE_DROITE_SANS,"./images/StatueDroiteYeuxVerts.bmp",255,255,255);
-
-	AjouteSpriteAFondTransparent(SCORE,"./images/Score.bmp",255,255,255);
-	AjouteSpriteAFondTransparent(ZERO,"./images/Zero.bmp",255,255,255);
-	AjouteSpriteAFondTransparent(UN,"./images/Un.bmp",255,255,255);
-	AjouteSpriteAFondTransparent(DEUX,"./images/Deux.bmp",255,255,255);
-	AjouteSpriteAFondTransparent(TROIS,"./images/Trois.bmp",255,255,255);
-	AjouteSpriteAFondTransparent(QUATRE,"./images/Quatre.bmp",255,255,255);
-	AjouteSpriteAFondTransparent(CINQ,"./images/Cinq.bmp",255,255,255);
-	AjouteSpriteAFondTransparent(SIX,"./images/Six.bmp",255,255,255);
-	AjouteSpriteAFondTransparent(SEPT,"./images/Sept.bmp",255,255,255);
-	AjouteSpriteAFondTransparent(HUIT,"./images/Huit.bmp",255,255,255);
-	AjouteSpriteAFondTransparent(NEUF,"./images/Neuf.bmp",255,255,255);
-
-	AjouteSpriteAFondTransparent(VIES,"./images/Vies.bmp",255,255,255);
-	AjouteSpriteAFondTransparent(NIVEAU,"./images/Niveau.bmp",255,255,255);
-	AjouteSpriteAFondTransparent(GAMEOVER,"./images/GameOver.bmp",255,255,255);
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////////////
-void DessineGrilleBase() {
-	int i,j;
-
-	for(i = 0; i < NB_LIGNES; i++) {
-		for(j = 0; j < NB_COLONNES; j++) {
-			if(tab[i][j] == MUR)
-				DessineSprite(i,j,MUR);
-				
-			if(tab[i][j] == PORTE)
-				DessineSprite(i,j,PORTE);
-				
-			if(tab[i][j] == SERRURE)
-				DessineSprite(i,j,SERRURE);
-		}
-	}
-
-	DessineSprite(1,15,SCORE);
-	DessineSprite(2,15,ZERO);
-	DessineSprite(2,16,ZERO);
-	DessineSprite(2,17,ZERO);
-	DessineSprite(2,18,ZERO);
-
-	DessineSprite(12,15,VIES);
-	DessineSprite(12,17,HERO_FACE_SANS);
-	DessineSprite(12,18,HERO_FACE_SANS);
-
-	DessineSprite(13,15,NIVEAU);
-	DessineSprite(13,17,ZERO);
-	DessineSprite(13,18,UN);
-}
 
 void * threadHero(void *dummy) {
-	int valeursAutorisees[] = {VIDE};
+	int valeursAutorisees[] = {VIDE, CLE};
 	CASE *chemin = NULL;
 	int nbCases, i;
+	int heroPix;
 	
 	printf("[+] Spawning hero at (%d,%d)\n", position_hero.C, position_hero.L);
 	
@@ -254,14 +124,24 @@ void * threadHero(void *dummy) {
 	
 	while(1) {
 		printf("[ ] Hero: waiting event...\n");
-		pthread_cond_wait(&condDestination, &mutexDestination);
 		
+		if(!(heroFlags & NEW_DEST))
+			pthread_cond_wait(&condDestination, &mutexDestination);
+		
+		/* Accepting new destination */
+		heroFlags &= ~NEW_DEST;
 		printf("[+] Hero: new position request: %d,%d\n", destination_hero.C, destination_hero.L);
 		
 		/* Checking destination */
-		if(tab[destination_hero.L][destination_hero.C] != VIDE || tab[destination_hero.L][destination_hero.C] != SERRURE) {
-			printf("[-] Case denied\n");
-			continue;
+		switch(tab[destination_hero.L][destination_hero.C]) {
+			case VIDE:
+			case SERRURE:
+			case CLE:
+				break;
+			
+			default:
+				printf("[-] Case denied\n");
+				continue;
 		}
 		
 		/* Path finding */
@@ -274,13 +154,46 @@ void * threadHero(void *dummy) {
 		
 		// pthread_mutex_lock(&mutexDestination);
 		
-		i = 0;
+		/* Moving */
+		i = 0;		
 		while(position_hero.C != destination_hero.C || position_hero.L != destination_hero.L) {
+			if(heroFlags & NEW_DEST) {
+				printf("[ ] New destination called. Cancelling this one...\n");
+				break;
+			}
+			
+			/* Updating tab */
+			pthread_mutex_lock(&mutexTab);
+			
+			/* Updating cache and current position */
+			tab[position_hero.L][position_hero.C] = cache;
+			
+			/* Updating UI */
 			EffaceCarre(position_hero.L, position_hero.C);
+			if(cache != VIDE)
+				DessineSprite(position_hero.L, position_hero.C, cache);
+			
+			/* Saving next case */
+			cache = tab[chemin[i].L][chemin[i].C];
+			EffaceCarre(chemin[i].L, chemin[i].C);
+			
+			/* Checking if got a key */
+			if(cache == CLE && !porteCle) {
+				porteCle = 1;
+				cache = VIDE;
+			}
+			
+			/* Updating next case */
+			tab[chemin[i].L][chemin[i].C] = HERO;
+			
+			pthread_mutex_unlock(&mutexTab);
+			
+			/* Writing UI */
+			heroPix = get_hero_pix(position_hero, *(chemin + i));
 			position_hero = chemin[i];
 			
 			printf("[ ] Hero position: %d,%d (destination: %d,%d)\n", position_hero.C, position_hero.L, destination_hero.C, destination_hero.L);
-			DessineSprite(chemin[i].L, chemin[i].C, HERO_FACE_SANS);
+			DessineSprite(chemin[i].L, chemin[i].C, heroPix);
 			
 			usleep(500000);	// 500 ms
 			i++;
@@ -303,6 +216,7 @@ void * threadHero(void *dummy) {
 
 void * threadEvent(void *dummy) {
 	EVENT_GRILLE_SDL event;
+	int thiscase;
 	
 	while(1) {
 		printf("[ ] Event: waiting event...\n");
@@ -310,11 +224,37 @@ void * threadEvent(void *dummy) {
 		
 		switch(event.type) {
 			case CLIC_GAUCHE:
-				// pthread_mutex_lock(&mutexDestination);
-				destination_hero.L = event.ligne;
-				destination_hero.C = event.colonne;
-				
-				pthread_cond_signal(&condDestination);
+				if(position_hero.C == event.colonne || position_hero.L == event.ligne) {
+					pthread_mutex_lock(&mutexDestination);
+					
+					destination_hero.L = event.ligne;
+					destination_hero.C = event.colonne;
+					
+					pthread_mutex_unlock(&mutexDestination);
+					
+					heroFlags |= NEW_DEST;
+					
+					pthread_cond_signal(&condDestination);
+				}
+			break;
+			
+			case CLAVIER:
+				switch(event.touche) {
+					case 'd':
+					case 'D':
+						if(!porteCle)
+							continue;
+						
+						pthread_mutex_lock(&mutexTab);
+						thiscase = tab[position_hero.L][position_hero.C];
+						pthread_mutex_unlock(&mutexTab);
+						
+						if(cache != SERRURE)
+							continue;
+						
+						printf("Deposer clé\n");
+					break;
+				}
 			break;
 			
 			case CROIX:
@@ -326,6 +266,54 @@ void * threadEvent(void *dummy) {
 	return dummy;
 }
 
+void * threadMaitreCles(void *dummy) {
+	int L = 0, C = 0;
+	
+	/* DEBUG */
+	/* unsigned int i;
+	for(i = 0; i < sizeof(positionStatues) / sizeof(POSITION); i++)
+		DessineSprite(positionStatues[i].L, positionStatues[i].C, TRESOR);
+	*/
+		
+	/* Initializing mutex */
+	pthread_mutex_init(&mutexNbCles, NULL);
+	// pthread_mutex_lock(&mutexNbCles);
+	
+	while(1) {
+		while(nbCles != 9) {
+			pthread_mutex_lock(&mutexNbCles);
+			nbCles++;
+			pthread_mutex_unlock(&mutexNbCles);
+			
+			pthread_mutex_lock(&mutexTab);
+			while(tab[L][C] != VIDE || is_statue_position(L, C)) {
+				L = (rand() % 12) + 1;
+				C = (rand() % 12) + 1;
+				
+				printf("[+] Spawning Key #%d: %d,%d\n", nbCles, L, C);
+			}
+			
+			tab[L][C] = CLE;
+			DessineSprite(L, C, CLE);
+			pthread_mutex_unlock(&mutexTab);
+		}
+		
+		pthread_cond_wait(&condNbCles, &mutexNbCles);
+		printf("CLE CALL\n");
+	}
+	
+	return dummy;
+}
+
+int is_statue_position(int L, int C) {
+	unsigned int i;
+	
+	for(i = 0; i < sizeof(positionStatues) / sizeof(POSITION); i++)
+		if(positionStatues[i].L == L && positionStatues[i].C == C)
+			return 1;
+	
+	return 0;
+}
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 /* void Exemple()
 {
