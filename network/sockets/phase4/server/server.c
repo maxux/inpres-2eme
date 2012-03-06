@@ -7,7 +7,7 @@
 #include "server.h"
 #include "transacserver.h"
 
-#define SLEEP_TIMEOUT	12.0
+#define SLEEP_TIMEOUT	18.0
 
 void sighandler(int signal) {
 	switch(signal) {
@@ -92,14 +92,21 @@ int main(int argc,char *argv[]) {
 		
 		switch(transaction.action) {
 			case RESERVATION:
+				/* Check double */
+				if(transac_check_exists(fp, &transaction)) {
+					printf("[-] Transaction already found\n");
+					SendDatagram(sockfd, &transaction, sizeof(transaction), &psor);
+					continue;
+				}
+				
 				transaction = ticket_reserver(fp, transaction);
 
 				/* Responding */
 				rc = SendDatagram(sockfd, &transaction, sizeof(transaction), &psor);
 				if(rc == -1)
 					perror("SendDatagram:");
-				else
-					fprintf(stderr, "[+] Sent: %d bytes\n", rc);
+					
+				else fprintf(stderr, "[+] Sent: %d bytes\n", rc);
 			break;
 			
 			default:

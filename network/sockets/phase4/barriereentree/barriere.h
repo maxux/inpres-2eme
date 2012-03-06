@@ -6,5 +6,5 @@
 		long numticket;
 		
 	} transaction_t;
-
+	
 #endif

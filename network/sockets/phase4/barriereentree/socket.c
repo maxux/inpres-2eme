@@ -5,6 +5,7 @@
 #include <time.h>
 #include <sys/time.h>
 #include <pthread.h>
+#include <fcntl.h>
 #include "barriere.h"
 #include "../common/physlib/physlib.h"
 #include "../common/transac.h"
@@ -25,6 +26,9 @@ void transaction_send(sock_send_t *send) {
 
 int transaction_transmit(int sockfd, transac_t *transaction, size_t size, struct sockaddr_in *psos, struct sockaddr_in *psor) {
 	int dlen, i, rc;
+	
+	int arg;
+	transac_t t;
 	
 	pthread_t retry;
 	pthread_mutex_t mutex;
@@ -90,6 +94,26 @@ int transaction_transmit(int sockfd, transac_t *transaction, size_t size, struct
 		
 		pthread_mutex_destroy(&mutex);
 		pthread_cond_destroy(&cond);
+		
+		arg = fcntl(sockfd, F_GETFL);
+		
+		
+		
+		/* Cleaning UDP Stack */
+		tv.tv_sec = 1;
+		tv.tv_usec = 0;
+        
+		if(setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (char *)&tv,  sizeof tv))
+			perror("setsockopt");
+			
+		while(i-- > 0) {
+			printf("[ ] Doublon supprimé\n");
+			ReceiveDatagram(sockfd, &t, sizeof(transac_t), psor);
+		}
+		
+		tv.tv_sec = 0;
+		if(setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (char *)&tv,  sizeof tv))
+			perror("setsockopt");
 		
 		return 0;	
 	}
