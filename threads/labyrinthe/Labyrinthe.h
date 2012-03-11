@@ -19,13 +19,15 @@
 	#define MEDUSE       10
 
 	// Macros associees aux sprites
-	#define HERO_FACE_AVEC    31
+	#define CLE_ID		  128
+	
+	#define HERO_DOS          31
 	#define HERO_FACE_SANS    32
-	#define HERO_DOS          33
-	#define HERO_GAUCHE_AVEC  34
-	#define HERO_GAUCHE_SANS  35
-	#define HERO_DROITE_AVEC  36
-	#define HERO_DROITE_SANS  37
+	#define HERO_FACE_AVEC    CLE_ID | HERO_FACE_SANS
+	#define HERO_GAUCHE_SANS  33
+	#define HERO_GAUCHE_AVEC  CLE_ID | HERO_GAUCHE_SANS
+	#define HERO_DROITE_SANS  34
+	#define HERO_DROITE_AVEC  CLE_ID | HERO_DROITE_SANS
 
 	#define GARDE_FACE        51
 	#define GARDE_DOS         52
@@ -76,6 +78,7 @@
 	void * threadHero(void *dummy);
 	void * threadEvent(void *dummy);
 	void * threadMaitreCles(void *dummy);
+	void * threadPorte(void *dummy);
 	
 	int is_statue_position(int L, int C);
 #endif

@@ -10,7 +10,7 @@
 #include "GameSDL.h"
 
 extern int tab[NB_LIGNES][NB_COLONNES];
-extern int porteCle;
+extern int porteCle, heroPix;
 
 void ChargementImages() {
 	// Definition des sprites et de l'image de fond

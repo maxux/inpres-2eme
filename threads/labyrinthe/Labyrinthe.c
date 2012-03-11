@@ -34,14 +34,12 @@ POSITION positionSerrures[] = {{6,15}, {6,16}, {6,17}, {7,15}, {7,16}, {7,17}, {
 CASE position_hero    = {0, 16};
 CASE destination_hero = {0, 16};
 
-pthread_t tHero, tEvent;
-pthread_mutex_t mutexDestination;
-pthread_cond_t condDestination;
+pthread_t tHero, tEvent, tPorte, tMaitreCles;
+pthread_mutex_t mutexDestination, mutexNbCles;
+pthread_cond_t condDestination, condNbCles;
 
-pthread_t tMaitreCles;
-pthread_mutex_t mutexNbCles;
-pthread_cond_t condNbCles;
 int nbCles = 0;
+int heroPix = 0;
 
 // Hero's flags
 hero_flags_t heroFlags = 0;
@@ -55,7 +53,64 @@ void diep(char *s) {
 	exit(1);
 }
 
+int debug_speed = 1;
+
+int signal_intercept(int signal, void (*function)(int)) {
+	struct sigaction sig;
+	int ret;
+	
+	/* Building empty signal set */
+	sigemptyset(&sig.sa_mask);
+	
+	/* Building Signal */
+	sig.sa_handler	 = function;
+	sig.sa_flags	 = 0;
+	
+	/* Installing Signal */
+	if((ret = sigaction(signal, &sig, NULL)) == -1)
+		perror("sigaction");
+	
+	return ret;
+}
+
+void signal_handler(int signal) {
+	switch(signal) {
+		case SIGUSR1:
+			printf("[+] Key Action (Thread ID: %d)\n", (int) pthread_self());
+			
+			/* Updating Map */
+			printf("[ ] Hero Position: %d,%d\n", position_hero.C, position_hero.L);
+			pthread_mutex_lock(&mutexTab);
+			printf("[ ] Hero Position: %d,%d\n", position_hero.C, position_hero.L);
+			tab[position_hero.C][position_hero.L] = CLE;
+			printf("[ ] Hero Position: %d,%d\n", position_hero.C, position_hero.L);
+			pthread_mutex_unlock(&mutexTab);
+			printf("[ ] Hero Position: %d,%d\n", position_hero.C, position_hero.L);
+			
+			/* Updating cache */
+			cache    = CLE;
+			porteCle = 0;
+			printf("[ ] Hero Position: %d,%d\n", position_hero.C, position_hero.L);
+			/* Removing key from pix */
+			printf("[ ] Hero pix (before): %d\n", heroPix);
+			heroPix &= ~CLE_ID;
+			printf("[ ] Hero pix (after): %d\n", heroPix);
+			printf("[ ] Hero Position: %d,%d\n", position_hero.C, position_hero.L);
+			/* Redraw */
+			// EffaceCarre(position_hero.L, position_hero.C);
+			// DessineSprite(position_hero.L, position_hero.C, heroPix);
+			printf("[ ] Hero Position: %d,%d\n", position_hero.C, position_hero.L);
+		break;
+		
+		case SIGALRM:
+			printf("[ ] ALARM on Thread ID: %d\n", (int) pthread_self());
+		break;
+	}
+}
+
 int main(void) {	
+	sigset_t sigset;
+	
 	srand((unsigned)time(NULL));
 
 	printf("[+] Initializing game\n");
@@ -64,6 +119,13 @@ int main(void) {
 		fprintf(stderr, "[-] Cannot initialize SDL\n");
 		return 1;
 	}
+	
+	
+	/*
+	 * DEBUG ENV
+	 */
+	if(getenv("DEBUG_GAME"))
+		debug_speed = 20;
 
 	// Definition des sprites et de l'image de fond
 	ChargementImages();
@@ -80,17 +142,52 @@ int main(void) {
 	
 	/* Threading threadHero */
 	printf("[+] Spawning Hero's thread\n");
+	
+	/* Init Signals */
+	sigfillset(&sigset);
+	sigdelset(&sigset, SIGUSR1);
+	sigprocmask(SIG_BLOCK, &sigset, NULL);
+	signal_intercept(SIGUSR1, signal_handler);
+	
 	if(pthread_create(&tHero, NULL, threadHero, NULL))
 		diep("[-] pthread_create");
 	
+	/* Clearing */
+	sigemptyset(&sigset);
+	sigaddset(&sigset, SIGUSR1);
+	sigprocmask(SIG_BLOCK, &sigset, NULL);
+	
+	
+	/* Spawning Event Thread */
 	printf("[+] Spawning threadEvent\n");
 	if(pthread_create(&tEvent, NULL, threadEvent, NULL))
 		diep("[-] pthread_create");
 	
+	
+	/* Spawning maitreCles Thread */
 	printf("[+] Spawning maitreCles\n");
 	if(pthread_create(&tMaitreCles, NULL, threadMaitreCles, NULL))
 		diep("[-] pthread_create");
 	
+	
+	/* Spawning Porte Thread */
+	printf("[+] Spawning Porte\n");
+	
+	sigfillset(&sigset);
+	sigdelset(&sigset, SIGALRM);
+	sigprocmask(SIG_BLOCK, &sigset, NULL);
+	signal_intercept(SIGALRM, signal_handler);
+	
+	if(pthread_create(&tPorte, NULL, threadPorte, NULL))
+		diep("[-] pthread_create");
+	
+	/* Clearing */
+	sigemptyset(&sigset);
+	sigaddset(&sigset, SIGALRM);
+	sigprocmask(SIG_BLOCK, &sigset, NULL);
+	
+	
+	/* Waiting end of game */
 	pthread_join(tHero, NULL);
 
 	// Fermeture de la grille de jeu (SDL)
@@ -106,8 +203,9 @@ void * threadHero(void *dummy) {
 	int valeursAutorisees[] = {VIDE, CLE};
 	CASE *chemin = NULL;
 	int nbCases, i;
-	int heroPix;
+	struct timespec ts;
 	
+	printf("[+] Hero ID: %d\n", (int) pthread_self());
 	printf("[+] Spawning hero at (%d,%d)\n", position_hero.C, position_hero.L);
 	
 	/* Writing Hero's position */
@@ -121,6 +219,10 @@ void * threadHero(void *dummy) {
 	/* Initializing mutex */
 	pthread_mutex_init(&mutexDestination, NULL);
 	pthread_mutex_lock(&mutexDestination);
+	
+	/* Init Sleep Time */
+	ts.tv_sec = 0;
+	ts.tv_nsec = 500000000 / debug_speed;
 	
 	while(1) {
 		printf("[ ] Hero: waiting event...\n");
@@ -195,7 +297,7 @@ void * threadHero(void *dummy) {
 			printf("[ ] Hero position: %d,%d (destination: %d,%d)\n", position_hero.C, position_hero.L, destination_hero.C, destination_hero.L);
 			DessineSprite(chemin[i].L, chemin[i].C, heroPix);
 			
-			usleep(500000);	// 500 ms
+			nanosleep(&ts, NULL);
 			i++;
 		}
 		
@@ -224,7 +326,7 @@ void * threadEvent(void *dummy) {
 		
 		switch(event.type) {
 			case CLIC_GAUCHE:
-				if(position_hero.C == event.colonne || position_hero.L == event.ligne) {
+				if((debug_speed != 1) || (position_hero.C == event.colonne || position_hero.L == event.ligne)) {
 					pthread_mutex_lock(&mutexDestination);
 					
 					destination_hero.L = event.ligne;
@@ -252,7 +354,7 @@ void * threadEvent(void *dummy) {
 						if(cache != SERRURE)
 							continue;
 						
-						printf("Deposer clé\n");
+						pthread_kill(tHero, SIGUSR1);
 					break;
 				}
 			break;
@@ -305,6 +407,40 @@ void * threadMaitreCles(void *dummy) {
 	return dummy;
 }
 
+void * threadPorte(void *dummy) {
+	unsigned int i;
+	char level_full;
+	
+	printf("[+] Porte ID: %d\n", (int) pthread_self());
+
+	while(1) {	
+		pthread_mutex_lock(&mutexTab);
+		
+		/* Flag to 1 */
+		level_full = 1;
+		
+		for(i = 0; i < sizeof(positionStatues) / sizeof(POSITION); i++) {
+			if(tab[positionStatues[i].L][positionStatues[i].C] != CLE) {
+				/* Clearing flag */
+				level_full = 0;
+				break;
+			}
+		}
+		
+		pthread_mutex_unlock(&mutexTab);
+		
+		/* Checking flag */
+		if(level_full)
+			printf("___ LEVEL COMPLETED ___\n");
+		
+		/* Waiting next time */
+		alarm(3);
+		sleep(3); //
+	}
+	
+	return dummy;
+}
+
 int is_statue_position(int L, int C) {
 	unsigned int i;
 	
@@ -314,67 +450,3 @@ int is_statue_position(int L, int C) {
 	
 	return 0;
 }
-///////////////////////////////////////////////////////////////////////////////////////////////////
-/* void Exemple()
-{
-  EVENT_GRILLE_SDL event;
-
-  // Exemple d'utilisation des libraires GrilleSDL et AStar
-
-    // structure définie dans AStar.h
-  printf("Cliquez sur sur une case depart...\n");
-  fflush(stdout);
-  char ok = 0;
-  while (!ok)
-  {
-    event = ReadEvent();  // Fonction bloquante attendant un evenement
-    if (event.type == CLIC_GAUCHE)
-    {
-      depart.L = event.ligne;
-      depart.C = event.colonne;
-      if (tab[depart.L][depart.C] == VIDE) ok = 1;
-    }
-  }
-  DessineSprite(depart.L,depart.C,HERO_FACE_AVEC);
-
-  printf("Cliquez sur sur une case arrivee...\n");
-  fflush(stdout);
-  ok = 0;
-  while (!ok)
-  {
-    event = ReadEvent();
-    if (event.type == CLIC_GAUCHE)
-    {
-      arrivee.L = event.ligne;
-      arrivee.C = event.colonne;
-      if (tab[arrivee.L][arrivee.C] == VIDE) ok = 1;
-    }
-  }
-
-  printf("Calcul et affichage du chemin...\n");
-  fflush(stdout);
-  int  valeursAutorisees[6];
-  CASE *chemin;  // Futur chemin
-  int  nbCases;
-  valeursAutorisees[0] = VIDE;
-  nbCases = RechercheChemin(&tab[0][0],NB_LIGNES,NB_COLONNES,valeursAutorisees,1,depart,arrivee,&chemin);
-  if (nbCases > 0)
-  {
-    for (int i=0 ; i<nbCases ; i++)
-      DessineSprite(chemin[i].L,chemin[i].C,HERO_FACE_SANS);
-  }
-  if (chemin) free(chemin);  // Ne pas oublier !!!
-  
-  printf("Cliquez sur la croix de la fenetre...\n");
-  fflush(stdout);
-  ok = 0;
-  while (!ok)
-  {  
-    event = ReadEvent();
-    if (event.type == CROIX) ok = 1;
-  }
-
-  return;
-}
-*/
-
