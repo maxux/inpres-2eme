@@ -4,19 +4,19 @@ ifeq ($(UNAME), Linux)
 
 CC      = gcc
 CFLAGS  = -lrt -O2 -W -Wall
-LDFLAGS = -lrt
+LDFLAGS = -lrt -lpthread
 
 endif
 ifeq ($(UNAME), QNX)
 
 CC      = qcc
 CFLAGS  = -O2 -W -Wall
-LDFLAGS = 
+LDFLAGS = -lpthread
 
 endif
 
 DEFINES =
-EXEC    = client
+EXEC    = server
 CLEANE  =
 
 SRC=$(wildcard *.c)

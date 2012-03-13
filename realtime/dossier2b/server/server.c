@@ -5,9 +5,7 @@
 #include <pthread.h>
 
 pid_t client = 0;
-int nbits = 0;
-
-#define TTS	SIGRTMIN
+unsigned int nbits = 0;
 
 void debug(pid_t mypid) {
 	unsigned int i;
@@ -23,19 +21,24 @@ void debug(pid_t mypid) {
 }
 
 void sighandler(int sig) {
-	if(sig == SIGUSR1 || sig == SIGRTMIN) {
-		client >>= 1;
-		nbits++;
+	switch(sig) {
+		case SIGUSR1:
+			client >>= 1;
+			nbits++;
 			
-		client &= (0xFFFFFFFF / 2);
-
-	} else if(sig == SIGUSR2 || sig == SIGRTMIN) {
-		client >>= 1;
-		nbits++;
+			client &= (0xFFFFFFFF / 2);
 			
-		client |= ~(0xFFFFFFFF / 2);
+		break;
+		
+		case SIGUSR2:
+			client >>= 1;
+			nbits++;
+			
+			client |= ~(0xFFFFFFFF / 2);
+			
+		break;
 	}
-
+	
 	// debug(client);
 	
 	if(nbits == 32) {
@@ -81,8 +84,6 @@ int main(void) {
 	
 	signal_intercept(SIGUSR1, sighandler);
 	signal_intercept(SIGUSR2, sighandler);
-	signal_intercept(SIGRTMIN, sighandler);
-	signal_intercept(SIGRTMAX, sighandler);
 	
 	if(pthread_create(&thr, NULL, th, NULL))
 		perror("pthread_create");

@@ -3,14 +3,14 @@ UNAME := $(shell uname)
 ifeq ($(UNAME), Linux)
 
 CC      = gcc
-CFLAGS  = -lrt -O2
+CFLAGS  = -lrt -O2 -W -Wall -lpthread
 LDFLAGS = -lrt
 
 endif
 ifeq ($(UNAME), QNX)
 
 CC      = qcc
-CFLAGS  = -O2 
+CFLAGS  = -O2 -W -Wall -lpthread
 LDFLAGS = 
 
 endif

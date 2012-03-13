@@ -20,6 +20,7 @@ void debug(pid_t mypid) {
 
 int main(int argc, char *argv[]) {
 	pid_t mypid, server;
+	sigval_t val;
 	unsigned int i;
 	
 	if(argc < 2) {
@@ -35,7 +36,7 @@ int main(int argc, char *argv[]) {
 	debug(mypid);
 	
 	for(i = 0; i < PID_SIZE; i++) {
-		kill(server, (mypid & 1) ? SIGUSR2 : SIGUSR1);
+		sigqueue(server, (mypid & 1) ? SIGUSR2 : SIGUSR1, val);
 		mypid = mypid >> 1;
 	}
 	

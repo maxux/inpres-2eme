@@ -16,7 +16,7 @@ LDFLAGS =
 endif
 
 DEFINES =
-EXEC    = client
+EXEC    = server
 CLEANE  =
 
 SRC=$(wildcard *.c)

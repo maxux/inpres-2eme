@@ -5,9 +5,7 @@
 #include <pthread.h>
 
 pid_t client = 0;
-int nbits = 0;
-
-#define TTS	SIGRTMIN
+int i = 0;
 
 void debug(pid_t mypid) {
 	unsigned int i;
@@ -23,27 +21,36 @@ void debug(pid_t mypid) {
 }
 
 void sighandler(int sig) {
-	if(sig == SIGUSR1 || sig == SIGRTMIN) {
-		client >>= 1;
-		nbits++;
+	switch(sig) {
+		case 34:
+		case SIGUSR1:
+			printf("GOT 0\n");
+			client >>= 1;
+			i++;
 			
-		client &= (0xFFFFFFFF / 2);
-
-	} else if(sig == SIGUSR2 || sig == SIGRTMIN) {
-		client >>= 1;
-		nbits++;
+			client &= (0xFFFFFFFF / 2);
 			
-		client |= ~(0xFFFFFFFF / 2);
+		break;
+		
+		case 64:
+		case SIGUSR2:
+			printf("GOT 1\n");
+			client >>= 1;
+			i++;
+			
+			client |= ~(0xFFFFFFFF / 2);
+			
+		break;
 	}
-
-	// debug(client);
 	
-	if(nbits == 32) {
+	debug(client);
+	
+	if(i == 32) {
 		printf("[+] Got 32 bits, killing: %d\n", client);
 		kill(client, SIGTERM);
 		
 		client = 0;
-		nbits  = 0;
+		i = 0;
 	}
 }
 
@@ -67,7 +74,7 @@ int signal_intercept(int signal, void (*function)(int)) {
 
 void * th(void *a) {
 	while(1) {
-		printf("[ ] Received: %d bits\n", nbits);
+		printf("[ ] Received: %d bits\n", i);
 		sleep(2);
 	}
 	
