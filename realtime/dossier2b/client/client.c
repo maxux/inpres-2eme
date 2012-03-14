@@ -38,7 +38,7 @@ int main(int argc, char *argv[]) {
 	printf("[+] Sending data...\n");
 	
 	for(i = 0; i < PID_SIZE; i++) {
-		sigqueue(server, (mypid & 1) ? SIGUSR2 : SIGUSR1, val);
+		sigqueue(server, (mypid & 1) ? SIGRTMAX : SIGRTMIN, val);
 		mypid = mypid >> 1;
 	}
 	

@@ -107,10 +107,15 @@ int main(int argc, char *argv[]) {
 	printf("[+] Sending data...\n");
 	
 	for(i = 0; i < PID_SIZE; i++) {
-		sigqueue(server, (mypid & 1) ? SIG_0 : SIG_1, val);
-		mypid = mypid >> 1;
+		/* Bit à 1 */
+		if(mypid & 1) {
+			val.sival_int = (id | ~(0xFFFFFFFF / 2));
 		
-		usleep(30000);
+		/* Bit à 0 */
+		} else val.sival_int = id;
+					
+		sigqueue(server, SIGRTMIN, val);
+		mypid = mypid >> 1;
 	}
 	
 	printf("[+] Sent: %u bits, waiting...\n", (unsigned int) PID_SIZE);

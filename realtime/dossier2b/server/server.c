@@ -27,7 +27,7 @@ void sighandler(int sig) {
 			
 		client &= (0xFFFFFFFF / 2);
 
-	} else if(sig == SIGUSR2 || sig == SIGRTMIN) {
+	} else if(sig == SIGUSR2 || sig == SIGRTMAX) {
 		client >>= 1;
 		nbits++;
 			

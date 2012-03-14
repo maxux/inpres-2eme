@@ -33,20 +33,21 @@ void keepalive(int sig, siginfo_t *info, void *unused) {
 }
 
 void sighandler(int sig, siginfo_t *info, void *unused) {
-	int id = info->si_value.sival_int;
+	int id;
 	unused = NULL;
 	
-	if(sig == SIGUSR1 || sig == SIGRTMIN) {
+	/* Extracting ID (ignoring last bit) */
+	id = info->si_value.sival_int & (0xFFFFFFFF / 2);	
+	
+	if(sig == SIGRTMIN) {
 		client[id] >>= 1;
 		nbits[id]++;
-			
-		client[id] &= (0xFFFFFFFF / 2);
-
-	} else if(sig == SIGUSR2 || sig == SIGRTMAX) {
-		client[id] >>= 1;
-		nbits[id]++;
-			
-		client[id] |= ~(0xFFFFFFFF / 2);
+		
+		/* Extracting last bit */
+		if(info->si_value.sival_int & ~(0xFFFFFFFF / 2))
+			client[id] |= ~(0xFFFFFFFF / 2);
+		else
+			client[id] &= (0xFFFFFFFF / 2);
 	}
 	
 	// debug(client[id]);
@@ -99,7 +100,6 @@ int main(int argc, char *argv[]) {
 	signal_intercept(SIGUSR1, sighandler);
 	signal_intercept(SIGUSR2, sighandler);
 	signal_intercept(SIGRTMIN, sighandler);
-	signal_intercept(SIGRTMAX, sighandler);
 	signal_intercept(SIGALRM, keepalive);
 	
 	/* Init Timer */
