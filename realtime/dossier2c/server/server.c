@@ -4,8 +4,12 @@
 #include <unistd.h>
 #include <pthread.h>
 
-pid_t client = 0;
-int i = 0;
+#define MAX_CLIENT	64
+
+pid_t client[MAX_CLIENT] = {0};
+int nbits[MAX_CLIENT]    = {0};
+
+pid_t dsp_pid;
 
 void debug(pid_t mypid) {
 	unsigned int i;
@@ -20,41 +24,44 @@ void debug(pid_t mypid) {
 	printf("\n");
 }
 
-void sighandler(int sig) {
-	switch(sig) {
-		case 34:
-		case SIGUSR1:
-			printf("GOT 0\n");
-			client >>= 1;
-			i++;
+void keepalive(int sig, siginfo_t *info, void *unused) {
+	sig    = 0;
+	unused = NULL;
+	info   = NULL;
+	
+	kill(dsp_pid, SIGUSR1);
+}
+
+void sighandler(int sig, siginfo_t *info, void *unused) {
+	int id = info->si_value.sival_int;
+	unused = NULL;
+	
+	if(sig == SIGUSR1 || sig == SIGRTMIN) {
+		client[id] >>= 1;
+		nbits[id]++;
 			
-			client &= (0xFFFFFFFF / 2);
+		client[id] &= (0xFFFFFFFF / 2);
+
+	} else if(sig == SIGUSR2 || sig == SIGRTMAX) {
+		client[id] >>= 1;
+		nbits[id]++;
 			
-		break;
-		
-		case 64:
-		case SIGUSR2:
-			printf("GOT 1\n");
-			client >>= 1;
-			i++;
-			
-			client |= ~(0xFFFFFFFF / 2);
-			
-		break;
+		client[id] |= ~(0xFFFFFFFF / 2);
 	}
 	
-	debug(client);
+	// debug(client[id]);
 	
-	if(i == 32) {
-		printf("[+] Got 32 bits, killing: %d\n", client);
-		kill(client, SIGTERM);
+	if(nbits[id] == 32) {
+		debug(client[id]);
+		printf("[+] Got 32 bits, killing: %d\n", (int) client[id]);
+		kill(client[id], SIGTERM);
 		
-		client = 0;
-		i = 0;
+		client[id] = 0;
+		nbits[id]  = 0;
 	}
 }
 
-int signal_intercept(int signal, void (*function)(int)) {
+int signal_intercept(int signal, void (*function)(int, siginfo_t*, void*)) {
 	struct sigaction sig;
 	int ret;
 	
@@ -62,8 +69,8 @@ int signal_intercept(int signal, void (*function)(int)) {
 	sigemptyset(&sig.sa_mask);
 	
 	/* Building Signal */
-	sig.sa_handler	 = function;
-	sig.sa_flags	 = 0;
+	sig.sa_handler	 = (void (*)(int)) function;
+	sig.sa_flags	 = SA_SIGINFO;
 	
 	/* Installing Signal */
 	if((ret = sigaction(signal, &sig, NULL)) == -1)
@@ -72,27 +79,46 @@ int signal_intercept(int signal, void (*function)(int)) {
 	return ret;
 }
 
-void * th(void *a) {
-	while(1) {
-		printf("[ ] Received: %d bits\n", i);
-		sleep(2);
+int main(int argc, char *argv[]) {
+	timer_t timer_dsp;
+	float delay;
+	struct sigevent sev;
+	struct itimerspec tval;
+	
+	if(argc < 3) {
+		fprintf(stderr, "[-] Missing arguments (PID, Delay)\n");
+		return 1;
 	}
 	
-	return a;
-}
-
-int main(void) {
-	pthread_t thr;
+	dsp_pid = (pid_t) atoi(argv[1]);
+	delay   = atof(argv[2]);
 	
-	printf("[+] PID: %d\n", (int) getpid());
+	printf("[+] Server  PID: %d\n", (int) getpid());
+	printf("[+] Display PID: %d (interval %f)\n", (int) dsp_pid, delay);
 	
 	signal_intercept(SIGUSR1, sighandler);
 	signal_intercept(SIGUSR2, sighandler);
 	signal_intercept(SIGRTMIN, sighandler);
 	signal_intercept(SIGRTMAX, sighandler);
+	signal_intercept(SIGALRM, keepalive);
 	
-	if(pthread_create(&thr, NULL, th, NULL))
-		perror("pthread_create");
+	/* Init Timer */
+	sev.sigev_notify = SIGEV_SIGNAL;
+	sev.sigev_signo  = SIGALRM;
+	sev.sigev_value.sival_ptr = &timer_dsp;
+	
+	timer_create(CLOCK_REALTIME, &sev, &timer_dsp);
+	
+	tval.it_value.tv_sec  = (int) delay;
+	tval.it_value.tv_nsec = (delay - (int) delay); //59000000;
+	
+	// Repeat Timer
+	tval.it_interval.tv_sec  = tval.it_value.tv_sec;
+	tval.it_interval.tv_nsec = tval.it_value.tv_nsec;
+	
+	timer_settime(timer_dsp, 0, &tval, NULL);
+	
+	printf("[+] Waiting...\n");
 	
 	while(1) {
 		sleep(32);

@@ -34,12 +34,14 @@ int main(int argc, char *argv[]) {
 	printf("[+] Server PID: %d\n", (int) server);
 	debug(mypid);
 	
+	printf("[+] Sending data...\n");
+	
 	for(i = 0; i < PID_SIZE; i++) {
 		kill(server, (mypid & 1) ? SIGUSR2 : SIGUSR1);
 		mypid = mypid >> 1;
 	}
 	
-	printf("[+] Sent: %lu bits, waiting...\n", PID_SIZE);
+	printf("[+] Sent: %u bits, waiting...\n", (unsigned int) PID_SIZE);
 	pause();
 	
 	return 0;

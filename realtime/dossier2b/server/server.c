@@ -21,27 +21,23 @@ void debug(pid_t mypid) {
 }
 
 void sighandler(int sig) {
-	switch(sig) {
-		case SIGUSR1:
-			client >>= 1;
-			nbits++;
+	if(sig == SIGUSR1 || sig == SIGRTMIN) {
+		client >>= 1;
+		nbits++;
 			
-			client &= (0xFFFFFFFF / 2);
+		client &= (0xFFFFFFFF / 2);
+
+	} else if(sig == SIGUSR2 || sig == SIGRTMIN) {
+		client >>= 1;
+		nbits++;
 			
-		break;
-		
-		case SIGUSR2:
-			client >>= 1;
-			nbits++;
-			
-			client |= ~(0xFFFFFFFF / 2);
-			
-		break;
+		client |= ~(0xFFFFFFFF / 2);
 	}
 	
 	// debug(client);
 	
 	if(nbits == 32) {
+		debug(client);
 		printf("[+] Got 32 bits, killing: %d\n", client);
 		kill(client, SIGTERM);
 		
@@ -59,7 +55,7 @@ int signal_intercept(int signal, void (*function)(int)) {
 	
 	/* Building Signal */
 	sig.sa_handler	 = function;
-	sig.sa_flags	 = 0;
+	sig.sa_flags	 = SA_SIGINFO;
 	
 	/* Installing Signal */
 	if((ret = sigaction(signal, &sig, NULL)) == -1)
@@ -84,6 +80,8 @@ int main(void) {
 	
 	signal_intercept(SIGUSR1, sighandler);
 	signal_intercept(SIGUSR2, sighandler);
+	signal_intercept(SIGRTMIN, sighandler);
+	signal_intercept(SIGRTMAX, sighandler);
 	
 	if(pthread_create(&thr, NULL, th, NULL))
 		perror("pthread_create");

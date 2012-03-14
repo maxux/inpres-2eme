@@ -3,9 +3,14 @@
 #include <signal.h>
 #include <time.h>
 #include <unistd.h>
+#include <sys/time.h>
 
 #define PID_SIZE	sizeof(pid_t) * 8
 #define CLOCK_REALTIME	0
+#define MAX_CLIENT	64
+
+#define SIG_1	SIGUSR1
+#define SIG_0	SIGUSR2
 
 void debug(pid_t mypid) {
 	unsigned int i;
@@ -22,11 +27,13 @@ void debug(pid_t mypid) {
 
 int main(int argc, char *argv[]) {
 	pid_t mypid, server;
-	sigval_t val;
+	union sigval val;
 	timer_t killme;
 	struct itimerspec tval;
 	struct sigevent sev;
+	struct timespec ts;
 	unsigned int i;
+	int id;
 	
 	if(argc < 2) {
 		fprintf(stderr, "[-] Missing arguments\n");
@@ -37,6 +44,15 @@ int main(int argc, char *argv[]) {
 	server = (pid_t) atoi(argv[1]);
 
 	printf("[+] Client PID: %d\n", (int) mypid);
+	
+	/* Random Client ID */
+	clock_gettime(CLOCK_REALTIME, &ts);
+	srand(ts.tv_nsec);
+	
+	id            = rand() % MAX_CLIENT;
+	val.sival_int = id;
+	printf("[+] Client ID : %d\n", id);
+	
 	printf("[+] Server PID: %d\n", (int) server);
 	debug(mypid);
 	
@@ -50,20 +66,19 @@ int main(int argc, char *argv[]) {
 	tval.it_value.tv_sec  = 5;
 	tval.it_value.tv_nsec = 20900000;
 	
-	tval.it_interval.tv_sec  = tval.it_value.tv_sec;
-	tval.it_interval.tv_nsec = tval.it_value.tv_nsec;
+	tval.it_interval.tv_sec  = 0;
+	tval.it_interval.tv_nsec = 0;
 	
 	timer_settime(killme, 0, &tval, NULL);
 	
 	printf("[+] Sending data...\n");
 	
 	for(i = 0; i < PID_SIZE; i++) {
-		kill(server, (mypid & 1) ? SIGUSR1 : SIGUSR2);
+		sigqueue(server, (mypid & 1) ? SIG_1 : SIG_0, val);
 		mypid = mypid >> 1;
-		usleep(20000);
 	}
 	
-	printf("[+] Sent: %lu bits, waiting...\n", PID_SIZE);
+	printf("[+] Sent: %u bits, waiting...\n", (unsigned int) PID_SIZE);
 	pause();
 	
 	return 0;
