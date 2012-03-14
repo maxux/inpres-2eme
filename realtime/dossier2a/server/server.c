@@ -7,8 +7,6 @@
 pid_t client = 0;
 int nbits = 0;
 
-#define TTS	SIGRTMIN
-
 void debug(pid_t mypid) {
 	unsigned int i;
 	

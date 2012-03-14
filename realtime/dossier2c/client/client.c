@@ -12,6 +12,8 @@
 #define SIG_1	SIGUSR1
 #define SIG_0	SIGUSR2
 
+timer_t killme;
+
 void debug(pid_t mypid) {
 	unsigned int i;
 	
@@ -25,10 +27,40 @@ void debug(pid_t mypid) {
 	printf("\n");
 }
 
+void sighandler(int sig) {
+	struct itimerspec tval;
+	
+	if(sig == SIGTERM) {
+		timer_gettime(killme, &tval);
+		
+		if(tval.it_value.tv_sec != 0 || tval.it_value.tv_nsec != 0)
+			printf("[-] Time left: %d.%ld\n", (int) tval.it_value.tv_sec, tval.it_value.tv_nsec);
+		
+		exit(EXIT_SUCCESS);
+	}
+}
+
+int signal_intercept(int signal, void (*function)(int)) {
+	struct sigaction sig;
+	int ret;
+	
+	/* Building empty signal set */
+	sigemptyset(&sig.sa_mask);
+	
+	/* Building Signal */
+	sig.sa_handler	 = function;
+	sig.sa_flags	 = 0;
+	
+	/* Installing Signal */
+	if((ret = sigaction(signal, &sig, NULL)) == -1)
+		perror("sigaction");
+	
+	return ret;
+}
+
 int main(int argc, char *argv[]) {
 	pid_t mypid, server;
 	union sigval val;
-	timer_t killme;
 	struct itimerspec tval;
 	struct sigevent sev;
 	struct timespec ts;
@@ -70,12 +102,15 @@ int main(int argc, char *argv[]) {
 	tval.it_interval.tv_nsec = 0;
 	
 	timer_settime(killme, 0, &tval, NULL);
+	signal_intercept(SIGTERM, sighandler);
 	
 	printf("[+] Sending data...\n");
 	
 	for(i = 0; i < PID_SIZE; i++) {
-		sigqueue(server, (mypid & 1) ? SIG_1 : SIG_0, val);
+		sigqueue(server, (mypid & 1) ? SIG_0 : SIG_1, val);
 		mypid = mypid >> 1;
+		
+		usleep(30000);
 	}
 	
 	printf("[+] Sent: %u bits, waiting...\n", (unsigned int) PID_SIZE);
