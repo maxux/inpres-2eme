@@ -1,5 +1,6 @@
-#include "AStar.h"
 #include <stdlib.h>
+#include "labyrinthe.h"
+#include "astar.h"
 
 ///// Declaration des structures et fonctions opaques /////////////////////////////////////////////
 typedef struct noeud
@@ -19,14 +20,14 @@ NOEUD*  estPresent(NOEUD* pTete,int L,int C);
 char    valeurAutorisee(int valeur,int *valeursAutorisees,int nbValeursAutorisees);
 
 ///// Definition des fonctions ////////////////////////////////////////////////////////////////////
-int RechercheChemin(int* tab,int nbLignes,int nbColonnes,int *valeursAutorisees,int nbValeursAutorisees,CASE depart,CASE arrivee,CASE **pChemin)
+int RechercheChemin(int* tab,int nbLignes,int nbColonnes,int *valeursAutorisees,int nbValeursAutorisees,position_t depart,position_t arrivee,position_t **pChemin)
 {
   char fini=0,trouve=0;
-  int backup,i,L,C,newWG,nbCases;
+  int backup,i,L,C,newWG,nbposition_ts;
   NOEUD* pListeOuverte;
   NOEUD* pListeFermee;
   NOEUD* courant,*temp;
-  CASE*  cheminI;
+  position_t*  cheminI;
 
   // Verification des positions de depart et d'arrivee
   if ((depart.L<0) || (depart.L>=nbLignes) || (arrivee.C<0) || (arrivee.C>=nbColonnes))
@@ -49,7 +50,7 @@ int RechercheChemin(int* tab,int nbLignes,int nbColonnes,int *valeursAutorisees,
     return 0;
   }
 
-  // On memorise et libere la case d'arrivee
+  // On memorise et libere la position_t d'arrivee
   backup = *(tab+arrivee.L*nbColonnes+arrivee.C);
   *(tab+arrivee.L*nbColonnes+arrivee.C) = valeursAutorisees[0];
 
@@ -135,16 +136,16 @@ int RechercheChemin(int* tab,int nbLignes,int nbColonnes,int *valeursAutorisees,
 
   if (trouve)
   {
-    // Comptage du nombre de cases a parcourir
-    nbCases = -1;
+    // Comptage du nombre de position_ts a parcourir
+    nbposition_ts = -1;
     p = courant;
     while(p != NULL)
     {
-      nbCases++;
+      nbposition_ts++;
       p = p->parent;
     }
 
-    cheminI = (CASE*)malloc(nbCases*sizeof(CASE));
+    cheminI = (position_t*)malloc(nbposition_ts*sizeof(position_t));
     p = courant;
     i = 0;
     while((p->L != depart.L) || (p->C != depart.C))
@@ -156,17 +157,17 @@ int RechercheChemin(int* tab,int nbLignes,int nbColonnes,int *valeursAutorisees,
     }
         
     // Allocation et remplissage du chemin solution
-    *pChemin = (CASE*)malloc(nbCases*sizeof(CASE));
-    for(i=0 ; i<nbCases ; i++)
+    *pChemin = (position_t*)malloc(nbposition_ts*sizeof(position_t));
+    for(i=0 ; i<nbposition_ts ; i++)
     {
-      (*pChemin)[i].L = cheminI[nbCases-1-i].L;
-      (*pChemin)[i].C = cheminI[nbCases-1-i].C;
+      (*pChemin)[i].L = cheminI[nbposition_ts-1-i].L;
+      (*pChemin)[i].C = cheminI[nbposition_ts-1-i].C;
     }
     free(cheminI);
   }
   else
   {
-    nbCases = -1;
+    nbposition_ts = -1;
     *pChemin = NULL;
   }   
 
@@ -184,10 +185,10 @@ int RechercheChemin(int* tab,int nbLignes,int nbColonnes,int *valeursAutorisees,
     free(temp);
   }
 
-  // On restore la case d'arrivee
+  // On restore la position_t d'arrivee
   *(tab+arrivee.L*nbColonnes+arrivee.C) = backup;
 
-  return nbCases; 
+  return nbposition_ts; 
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////

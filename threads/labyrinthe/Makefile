@@ -1,27 +1,22 @@
-ASTAR=AStar
-GRILLESDL=GrilleSDL
+CC=gcc
 
-CC=gcc -g -O2 -W -Wall -D SUNRAY1 -I$(ASTAR) -I$(GRILLESDL) -I /opt/guengel/include/SDL
-# SUNRAY1       pour la machine sunray1 de l'école
-# VMWARESOLARIS pour la machine virtuelle solaris fournie en debut d'annee
+EXEC    = labyrinthe
+CFLAGS  = -g -O2 -W -Wall
+LDFLAGS = -lrt -lpthread -lSDL
 
-ALL: Labyrinthe
-OBJS = $(ASTAR)/AStar.o $(GRILLESDL)/GrilleSDL.o GameSDL.o 
-PROGRAMS = Labyrinthe
+SRC=$(wildcard *.c)
+OBJ=$(SRC:.c=.o)
 
-Labyrinthe:	Labyrinthe.c $(OBJS)
-	$(CC) Labyrinthe.c -o Labyrinthe $(OBJS) -lrt -lpthread -lSDL
+all: $(EXEC)
 
-$(ASTAR)/AStar.o:	$(ASTAR)/AStar.c $(ASTAR)/AStar.h
-		$(CC) -c $(ASTAR)/AStar.c
-		mv AStar.o $(ASTAR)
+$(EXEC): $(OBJ)
+	$(CC) -o $@ $^ $(LDFLAGS)
 
-$(GRILLESDL)/GrilleSDL.o:	$(GRILLESDL)/GrilleSDL.c $(GRILLESDL)/GrilleSDL.h
-		$(CC) -c $(GRILLESDL)/GrilleSDL.c
-		mv GrilleSDL.o $(GRILLESDL)
+%.o: %.c
+	$(CC) -o $@ -c $< $(CFLAGS)
 
 clean:
-	rm -f $(OBJS) core
+	rm -f *.o
 
-clobber:	clean
-	rm -f tags $(PROGRAMS)
+mrproper: clean
+	rm -f $(PROGRAMS)

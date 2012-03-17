@@ -4,13 +4,11 @@
 #include <pthread.h>
 #include <signal.h>
 #include <time.h>
-#include "GrilleSDL.h"
-#include "AStar.h" 
-#include "Labyrinthe.h"
-#include "GameSDL.h"
-
-extern int tab[NB_LIGNES][NB_COLONNES];
-extern int porteCle, heroPix;
+#include "labyrinthe.h"
+#include "astar.h" 
+#include "sdl_grind.h"
+#include "sdl_game.h"
+#include "interface.h"
 
 void ChargementImages() {
 	// Definition des sprites et de l'image de fond
@@ -67,48 +65,27 @@ void DessineGrilleBase() {
 	for(i = 0; i < NB_LIGNES; i++) {
 		for(j = 0; j < NB_COLONNES; j++) {
 			if(tab[i][j] == MUR)
-				DessineSprite(i,j,MUR);
+				DessineSprite(mk_position_t(i, j), MUR);
 				
 			if(tab[i][j] == PORTE)
-				DessineSprite(i,j,PORTE);
+				DessineSprite(mk_position_t(i, j), PORTE);
 				
 			if(tab[i][j] == SERRURE)
-				DessineSprite(i,j,SERRURE);
+				DessineSprite(mk_position_t(i, j), SERRURE);
 		}
 	}
 
-	DessineSprite(1,15,SCORE);
-	DessineSprite(2,15,ZERO);
-	DessineSprite(2,16,ZERO);
-	DessineSprite(2,17,ZERO);
-	DessineSprite(2,18,ZERO);
+	DessineSprite(mk_position_t(1, 15), SCORE);
+	DessineSprite(mk_position_t(2, 15), ZERO);
+	DessineSprite(mk_position_t(2, 16), ZERO);
+	DessineSprite(mk_position_t(2, 17), ZERO);
+	DessineSprite(mk_position_t(2, 18), ZERO);
 
-	DessineSprite(12,15,VIES);
-	DessineSprite(12,17,HERO_FACE_SANS);
-	DessineSprite(12,18,HERO_FACE_SANS);
+	DessineSprite(mk_position_t(12, 15), VIES);
+	DessineSprite(mk_position_t(12, 17), HERO_FACE_SANS);
+	DessineSprite(mk_position_t(12, 18), HERO_FACE_SANS);
 
-	DessineSprite(13,15,NIVEAU);
-	DessineSprite(13,17,ZERO);
-	DessineSprite(13,18,UN);
-}
-
-int get_hero_pix(CASE prev, CASE new) {
-	/* printf("Previous: %d,%d\nNew: %d, %d\n", prev->L, prev->C, new->L, new->C); */
-	
-	/* Left or Right */
-	if(prev.L == new.L) {
-		if(prev.C < new.C)
-			return (porteCle) ? HERO_DROITE_AVEC : HERO_DROITE_SANS;
-			
-		else return (porteCle) ? HERO_GAUCHE_AVEC : HERO_GAUCHE_SANS;
-		
-	/* Top or Bottom */
-	} else {
-		if(prev.L < new.L)
-			return (porteCle) ? HERO_FACE_AVEC : HERO_FACE_SANS;
-			
-		else return HERO_DOS;
-	}
-	
-	return HERO_FACE_SANS;
+	DessineSprite(mk_position_t(13, 15), NIVEAU);
+	DessineSprite(mk_position_t(13, 17), ZERO);
+	DessineSprite(mk_position_t(13, 18), UN);
 }

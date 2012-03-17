@@ -4,5 +4,5 @@
 	void ChargementImages();
 	void DessineGrilleBase();
 	
-	int get_hero_pix(CASE prev, CASE new);
+	int get_hero_pix(position_t prev, position_t new);
 #endif

@@ -9,13 +9,7 @@
 #ifndef A_STAR_H
 #define A_STAR_H
 
-typedef struct _case
-{
-  int L;  // ligne d'une case du tableau
-  int C;  // colonne d'une case du tableau
-} CASE;   // represente une case du tableau
-
-int RechercheChemin(int* tab,int nbLignes,int nbColonnes,int *valeursAutorisees,int nbValeursAutorisees,CASE depart,CASE arrivee,CASE** pChemin);
+int RechercheChemin(int* tab,int nbLignes,int nbColonnes,int *valeursAutorisees,int nbValeursAutorisees,position_t depart,position_t arrivee,position_t **pChemin);
 
 // tab = tableau 2D d'entiers representant le terrain sur lequel le chemin le plus court doit etre recherche
 // nbLignes,nbColonnes = dimensions du tableau 2D tab

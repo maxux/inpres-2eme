@@ -1,4 +1,4 @@
-#include "GrilleSDL.h"
+#include "sdl_grind.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////
 ///// Structures et fonctions opaques //////////////////////////////////////////////////
@@ -242,8 +242,13 @@ int DessineCarre(int L,int C,int R,int G,int B)
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
-int EffaceCarre(int L,int C)
+int EffaceCarre(position_t pos)
 {
+	int L, C;
+	
+	L = pos.L;
+	C = pos.C;
+	
   SDL_Rect rect,offset;
 
   if (L<0 || L>=maGrille.nbLignes || C<0 || C>=maGrille.nbColonnes)
@@ -415,11 +420,15 @@ int AjouteSpriteAFondTransparent(int code,const char* nomFichier,int Rf,int Gf,i
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
-int DessineSprite(int L,int C,int code)
+int DessineSprite(position_t pos,int code)
 {
+	int L, C;
   SDL_Rect rect;
   int i;
   char trouve;
+  
+  L = pos.L;
+  C = pos.C;
 
   if (L<0 || L>=maGrille.nbLignes || C<0 || C>=maGrille.nbColonnes)
     return -1;

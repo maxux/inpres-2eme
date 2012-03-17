@@ -12,18 +12,12 @@
 #ifndef GRILLE_SDL_H
 #define GRILLE_SDL_H
 
-#ifdef VMWARESOLARIS
-#include <SDL.h>       // Pour la machine virtuelle solaris
-#endif
-
-#ifdef SUNRAY1
-#include <SDL/SDL.h>   // Pour sunray1
-#endif
-
+#include <SDL/SDL.h>
 #include <pthread.h>
 #include <time.h>
 #include <stdlib.h>
 #include <signal.h>
+#include "labyrinthe.h"
 
 typedef struct
 {
@@ -53,14 +47,14 @@ int FermerGrilleSDL();
 int DessineCouleurFond(int R,int G,int B);          // RGB compris entre 0 et 255
 int DessineImageFond(const char* nomFichier);
 int DessineCarre(int L,int C,int R,int G,int B);    // RGB compris entre 0 et 255
-int EffaceCarre(int L,int C);                       // Restitue l'image (ou la couleur) de fond
+int EffaceCarre(position_t pos);                       // Restitue l'image (ou la couleur) de fond
 int AjouteSprite(int code,const char* nomFichier);  
 // code represente la valeur entier utilisee pour identifier un sprite, et sera utilise dans la fonction
 // DessineSprite
 // La largeur et la hauteur du sprite doivent etre un multiple de tailleCarre
 int AjouteSpriteAFondTransparent(int code,const char* nomFichier,int Rf,int Gf,int Bf);
 // (Rf,Gf,Bf) represente la couleur qui sera affichee de maniere transparente, laissant apparaitre le fond
-int DessineSprite(int L,int C,int code);
+int DessineSprite(position_t pos, int code);
 EVENT_GRILLE_SDL ReadEvent();
 // Fonction bloquante permettant de lire un evenement clavier, clic souris ou croix de la fenetre
 
