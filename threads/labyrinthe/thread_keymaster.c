@@ -10,7 +10,7 @@
 pthread_t tMaitreCles;
 
 void * threadMaitreCles(void *dummy) {
-	position_t pos;
+	position_t pos = {0, 0};
 		
 	/* Initializing mutex */
 	pthread_mutex_init(&mutexNbCles, NULL);

@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <pthread.h>
 #include "labyrinthe.h"
 #include "astar.h"
 

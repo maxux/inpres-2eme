@@ -2,5 +2,5 @@
 	#define __THREAD_HERO_H
 
 	void * threadHero(void *dummy);
-	int hero_getpix(position_t prev, position_t new);
+	int hero_getpix(position_t prev, position_t new, int porteCle);
 #endif

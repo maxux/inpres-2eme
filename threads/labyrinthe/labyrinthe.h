@@ -66,6 +66,15 @@
 		
 	} hero_flags_t;
 	
+	typedef enum score_flags_t {
+		GOT_NEW_KEY = 1,
+		GOT_OLD_KEY = 2,
+		PUT_KEY     = 4,
+		GOT_PERLE   = 8,
+		GOT_TRESOR  = 16
+		
+	} score_flags_t;
+	
 	typedef struct position_t {
 		int L;
 		int C;
@@ -78,6 +87,13 @@
 		int indice;
 		
 	} S_STATUE;
+	
+	typedef struct s_personnage {
+		int whoami;
+		char porteCle;
+		int cache;
+		
+	} S_PERSONNAGE;
 	
 	extern int tab[NB_LIGNES][NB_COLONNES];
 
@@ -98,28 +114,30 @@
 	extern int indiceExtraction;
 	
 	extern float delay;
+	extern short nbStatue;
 
 	/* Threads/Mutex/Conditions */
-	extern pthread_t tHero, tEvent, tPorte, tMaitreCles, tStatues[9], tGardePorte;
-	extern pthread_cond_t condDestination, condNbCles, condListeTaches, condStatueReady;
-	extern pthread_mutex_t mutexDestination, mutexHero, mutexNbCles, mutexTab, mutexHeroPix, mutexStatueReady,
-			       mutexPosition, mutexListeTaches, mutexIndiceInsertion, mutexIndiceExtraction;
+	extern pthread_key_t spec_key;
+	extern pthread_t tHero, tEvent, tPorte, tMaitreCles, tStatues[9], tGardePorte, tScore, tBonus;
+	extern pthread_cond_t condDestination, condNbCles, condListeTaches, condStatueReady, condScore;
+	extern pthread_mutex_t mutexDestination, mutexHero, mutexNbCles, mutexTab, mutexHeroPix, mutexStatueReady, mutexScoreFlags,
+			       mutexPosition, mutexListeTaches, mutexIndiceInsertion, mutexIndiceExtraction, mutexScore;
 	
 	extern S_STATUE *__s_statue_debug[9];
 
 	extern int nbCles;
 
-	// Hero's flags
+	/* Hero's flags */
 	extern hero_flags_t heroFlags;
+	
+	/* Score flags */
+	extern score_flags_t scoreFlags;
 
-	// Temporary
-	extern int cache;
-	extern int porteCle;
+
 	extern int heroPix;
-
 	extern int debug_speed;
 	
 	
-	
+	/* Prototypes */
 	int is_statue_position(position_t pos);
 #endif

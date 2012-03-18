@@ -17,8 +17,17 @@ int heroPix  = 0;
 void * threadHero(void *dummy) {
 	int valeursAutorisees[] = {VIDE, CLE, SERRURE};
 	position_t *chemin = NULL;
-	int nbCases, i, j;
+	int nbCases, i, j, killStatue;
 	struct timespec ts;
+	S_PERSONNAGE *me;
+	
+	/* Linking Specific Data */
+	me = (S_PERSONNAGE*) malloc(sizeof(S_PERSONNAGE));
+	
+	me->whoami   = HERO;
+	me->cache    = VIDE;
+	me->porteCle = 0;
+	pthread_setspecific(spec_key, me);
 	
 	printf("[+] Hero ID: %d\n", (int) pthread_self());
 	printf("[+] Hero: Spawning at (%d,%d)\n", position_hero.L, position_hero.C);
@@ -31,7 +40,9 @@ void * threadHero(void *dummy) {
 	
 	/* Init Sleep Time */
 	ts.tv_sec = (int) delay;
-	ts.tv_nsec = ((delay - (int) delay) * 1000000000) / debug_speed;
+	
+	// ts.tv_nsec = ((delay - (int) delay) * 1000000000) / debug_speed;
+	ts.tv_nsec = ((delay - (int) delay) * 1000000000) / 60;
 	
 	while(1) {
 		printf("[ ] Hero: waiting event...\n");
@@ -53,6 +64,8 @@ void * threadHero(void *dummy) {
 			case VIDE:
 			case SERRURE:
 			case CLE:
+			case PERLE:
+			case TRESOR:
 				break;
 			
 			default:
@@ -79,36 +92,60 @@ void * threadHero(void *dummy) {
 			}
 			
 			/* Updating cache and current position */
-			set_tab(get_position_hero(), cache);
+			set_tab(get_position_hero(), me->cache);
 			
 			/* Updating UI */
 			EffaceCarre(get_position_hero());
-			if(cache != VIDE)
-				DessineSprite(get_position_hero(), cache);
+			if(me->cache != VIDE)
+				DessineSprite(get_position_hero(), me->cache);
 			
 			/* Saving next case */
-			cache = get_tab(chemin[i]);
+			me->cache = get_tab(chemin[i]);
 			EffaceCarre(chemin[i]);
 			
 			/* Checking if got a key */
-			if(cache == CLE && !porteCle) {
-				cache = VIDE;
-				porteCle = 1;
+			if(me->cache == CLE && !me->porteCle) {
+				pthread_mutex_lock(&mutexScoreFlags);
+				scoreFlags = GOT_NEW_KEY;
+				
+				me->cache    = VIDE;
+				me->porteCle = 1;
 				
 				/* Checking old SERRURE mapping */
 				for(j = 0; j < SERRURES_COUNT; j++) {
 					if(compare_position(get_position_hero(), positionSerrures[j])) {
-						cache = SERRURE;
+						printf("[ ] Hero: previous was SERRURE, restoring...\n");
+						
+						me->cache  = SERRURE;
+						scoreFlags = GOT_OLD_KEY;
 						break;
 					}
 				}
+				
+				pthread_cond_signal(&condScore);
+			}
+			
+			if(me->cache == TRESOR || me->cache == PERLE) {
+				pthread_mutex_lock(&mutexScoreFlags);
+				
+				if(me->cache == PERLE) {
+					scoreFlags = GOT_PERLE;
+					killStatue = rand() % nbStatue;
+					printf("[+] Hero: Killing Statue #%d\n", killStatue);
+					pthread_kill(tStatues[killStatue], SIGUSR2);
+					
+				} else scoreFlags = GOT_TRESOR;
+				
+				me->cache = VIDE;
+				
+				pthread_cond_signal(&condScore);
 			}
 			
 			/* Updating next case */
 			set_tab(chemin[i], HERO);
 			
 			/* Writing UI */
-			set_heropix(hero_getpix(get_position_hero(), *(chemin + i)));
+			set_heropix(hero_getpix(get_position_hero(), *(chemin + i), me->porteCle));
 			set_position_hero(chemin[i]);
 			
 			printf("[ ] Hero: position: %d,%d (destination: %d,%d)\n", position_hero.L, position_hero.C, destination_hero.L, destination_hero.C);
@@ -130,7 +167,7 @@ void * threadHero(void *dummy) {
 	return dummy;
 }
 
-int hero_getpix(position_t prev, position_t new) {
+int hero_getpix(position_t prev, position_t new, int porteCle) {
 	/* printf("Previous: %d,%d\nNew: %d, %d\n", prev->L, prev->C, new->L, new->C); */
 	
 	/* Left or Right */

@@ -16,14 +16,27 @@ position_t ListeTaches[10];
 
 void * threadStatue(void *_id) {
 	S_STATUE *id = (S_STATUE*) _id;
-	int __porteCle = 0, __cache = VIDE;
 	int valeursAutorisees[] = {VIDE, CLE, HERO, SERRURE, TRESOR, PERLE};
 	position_t dest;
 	position_t *chemin = NULL;
 	int nbCases, i, statuePix;
-	struct timespec ts;
+	struct timespec ts;	
+	S_PERSONNAGE *me;
+	
+	/* Pushing exit cleanup */
+	pthread_cleanup_push(killStatue, _id);
 	
 	printf("[+] Statue #%d ID: %d\n", id->indice, (int) pthread_self());
+	
+	/* Linking Specific Data */
+	me = (S_PERSONNAGE*) malloc(sizeof(S_PERSONNAGE));
+	
+	me->whoami   = STATUE;
+	me->cache    = VIDE;
+	me->porteCle = 0;
+	pthread_setspecific(spec_key, me);
+
+
 	printf("[+] Statue #%d: Spawning at (%d,%d)\n", id->indice, id->depart.L, id->depart.C);
 	
 	/* Writing Hero's position */
@@ -80,7 +93,7 @@ void * threadStatue(void *_id) {
 		i = 0;
 		while(id->position.C != dest.C || id->position.L != dest.L) {
 			/* Checking key presence */
-			if(!__porteCle && get_tab_nonblock(dest) != CLE && get_tab_nonblock(dest) != STATUE && get_tab_nonblock(dest) != HERO) {
+			if(!me->porteCle && get_tab_nonblock(dest) != CLE && get_tab_nonblock(dest) != STATUE && get_tab_nonblock(dest) != HERO) {
 				printf("[-] Statue #%d: Key is no longer available (%d,%d = %d). Back at home.\n", id->indice, dest.L, dest.C, get_tab_nonblock(dest));
 				
 				pthread_mutex_unlock(&mutexTab);
@@ -108,29 +121,29 @@ void * threadStatue(void *_id) {
 			}
 			
 			/* Updating cache and current position */
-			set_tab_nonblock(id->position, __cache);
+			set_tab_nonblock(id->position, me->cache);
 			
 			/* Updating UI */
 			EffaceCarre(id->position);
-			if(__cache != VIDE)
-				DessineSprite(id->position, __cache);
+			if(me->cache != VIDE)
+				DessineSprite(id->position, me->cache);
 			
 			/* Saving next case */
-			__cache = get_tab_nonblock(chemin[i]);
+			me->cache = get_tab_nonblock(chemin[i]);
 			EffaceCarre(chemin[i]);
 			
 			/* Updating next case */
 			set_tab_nonblock(chemin[i], STATUE);
 			
-			// Unlocking
-			pthread_mutex_unlock(&mutexTab);
-			
 			/* Writing UI */
-			statuePix = (debug_speed > 1) ? ZERO + id->indice : statue_getpix(id->position, *(chemin + i), __porteCle);
+			statuePix = (debug_speed > 1) ? ZERO + id->indice : statue_getpix(id->position, *(chemin + i), me->porteCle);
 			id->position = chemin[i];
 			
 			printf("[ ] Statue #%d: position: %d,%d (destination: %d,%d)\n", id->indice, id->position.L, id->position.C, dest.L, dest.C);
 			DessineSprite(chemin[i], statuePix);
+			
+			// Unlocking
+			pthread_mutex_unlock(&mutexTab);
 			
 			nanosleep(&ts, NULL);
 			i++;
@@ -144,21 +157,21 @@ void * threadStatue(void *_id) {
 		if(compare_position(id->position, id->depart)) {
 			printf("[+] Statue #%d: I got the key, mouwhahaha\n", id->indice);
 			
-			if(__porteCle)
+			if(me->porteCle)
 				set_nbcle(get_nbcle() - 1);
 			
 			/* Tell KeyMaster to pop new key */	
 			pthread_cond_signal(&condNbCles);
 			
 			/* Clearing key */
-			__porteCle = 0;			
+			me->porteCle = 0;			
 			continue;
 		}
 		
 		/* We got the key */
-		if(__cache == CLE) {
-			__porteCle = 1;
-			__cache    = VIDE;
+		if(me->cache == CLE) {
+			me->porteCle = 1;
+			me->cache    = VIDE;
 			
 			/* Updating game map */
 			set_tab(dest, VIDE);
@@ -176,26 +189,39 @@ void * threadStatue(void *_id) {
 		printf("[-] Statue #%d: WTF ?\n", id->indice);
 	}
 	
+	pthread_cleanup_pop(1);
+	
 	return id;
 }
 
-int statue_getpix(position_t prev, position_t new, int __porteCle) {
+int statue_getpix(position_t prev, position_t new, int porteCle) {
 	/* printf("Previous: %d,%d\nNew: %d, %d\n", prev->L, prev->C, new->L, new->C); */
 	
 	/* Left or Right */
 	if(prev.L == new.L) {
 		if(prev.C < new.C)
-			return (__porteCle) ? STATUE_DROITE_AVEC : STATUE_DROITE_SANS;
+			return (porteCle) ? STATUE_DROITE_AVEC : STATUE_DROITE_SANS;
 			
-		else return (__porteCle) ? STATUE_GAUCHE_AVEC : STATUE_GAUCHE_SANS;
+		else return (porteCle) ? STATUE_GAUCHE_AVEC : STATUE_GAUCHE_SANS;
 		
 	/* Top or Bottom */
 	} else {
 		if(prev.L < new.L)
-			return (__porteCle) ? STATUE_FACE_AVEC : STATUE_FACE_SANS;
+			return (porteCle) ? STATUE_FACE_AVEC : STATUE_FACE_SANS;
 			
 		else return STATUE_DOS;
 	}
 	
 	return STATUE_FACE_SANS;
+}
+
+void killStatue(void *arg) {
+	S_STATUE *s = (S_STATUE*) arg;
+	
+	pthread_mutex_lock(&mutexTab);
+	
+	if(get_tab_nonblock(s->position) == STATUE) {
+		EffaceCarre(s->position);
+		set_tab_nonblock(s->position, VIDE);
+	}
 }

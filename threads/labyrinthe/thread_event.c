@@ -11,7 +11,7 @@ pthread_t tEvent;
 
 void * threadEvent(void *dummy) {
 	EVENT_GRILLE_SDL event;
-	int thiscase, i;
+	int i;
 	
 	while(1) {
 		printf("[ ] Event: waiting event...\n");
@@ -31,15 +31,6 @@ void * threadEvent(void *dummy) {
 			case CLAVIER:
 				switch(event.touche) {
 					case 'd':
-					case 'D':
-						if(!porteCle)
-							continue;
-						
-						thiscase = get_tab(get_position_hero());
-						
-						if(cache != SERRURE)
-							continue;
-						
 						pthread_kill(tHero, SIGUSR1);
 					break;
 					

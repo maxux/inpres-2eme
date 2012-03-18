@@ -37,7 +37,9 @@ void * threadPorte(void *dummy) {
 					EffaceCarre(positionSerrures[i]);
 					DessineSprite(positionSerrures[i], SERRURE);
 					
-				} else cache = SERRURE;
+				}
+				
+				// TODO: KILL HERO FOR CACHE: else cache = SERRURE;
 			}
 			
 			/* Remove Door */
@@ -47,7 +49,7 @@ void * threadPorte(void *dummy) {
 		
 		/* Waiting next time */
 		alarm(3);
-		sleep(3); //
+		sleep(3);
 	}
 	
 	return dummy;

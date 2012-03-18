@@ -3,5 +3,6 @@
 
 	void * threadStatue(void *_id);
 	int statue_getpix(position_t prev, position_t new, int __porteCle);
+	void killStatue(void *arg);
 #endif
 

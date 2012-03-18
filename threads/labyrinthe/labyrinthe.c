@@ -14,6 +14,8 @@
 #include "thread_keymaster.h"
 #include "thread_statue.h"
 #include "thread_gardeporte.h"
+#include "thread_score.h"
+#include "thread_bonus.h"
 #include "interface.h"
 
 int tab[NB_LIGNES][NB_COLONNES] = {
@@ -54,6 +56,7 @@ pthread_mutex_t mutexNbCles;
 pthread_cond_t condDestination, condNbCles;
 
 int nbCles = 0;
+short nbStatue = 0;
 
 float delay = 0.5;
 
@@ -71,6 +74,7 @@ int cache;
 
 int debug_speed = 1;
 S_STATUE *__s_statue_debug[9] = {NULL};
+pthread_key_t spec_key;
 
 void diep(char *s) {
 	perror(s);
@@ -96,16 +100,38 @@ int signal_intercept(int signal, void (*function)(int)) {
 }
 
 void signal_handler(int signal) {
+	S_PERSONNAGE *me;
+	int thiscase;
+	
 	switch(signal) {
 		case SIGUSR1:
+			if(!(me = pthread_getspecific(spec_key))) {
+				fprintf(stderr, "[-] ERROR: getspecific failed\n");
+				exit(1);
+			}
+			
+			if(!me->porteCle)
+				break;
+			
+			thiscase = get_tab(get_position_hero());
+			
+			if(me->cache != SERRURE)
+				break;
+			
+			/* Updating Score */
+			pthread_mutex_lock(&mutexScoreFlags);
+			scoreFlags = PUT_KEY;
+			
+			pthread_cond_signal(&condScore);
+						
 			printf("[+] Key Action (Thread ID: %d)\n", (int) pthread_self());
 			
 			/* Updating Map */
 			set_tab(get_position_hero(), CLE);
 			
-			/* Updating cache */
-			cache    = CLE;
-			porteCle = 0;
+			/* Updating cache */			
+			me->cache    = CLE;
+			me->porteCle = 0;
 			
 			/* Removing key from pix */
 			printf("[ ] Hero pix (before): %d\n", get_heropix());
@@ -124,19 +150,35 @@ void signal_handler(int signal) {
 		break;
 		
 		case SIGUSR2:
-			printf("[-] Hero: I'm dead...\n");
+			if(!(me = pthread_getspecific(spec_key))) {
+				fprintf(stderr, "[-] ERROR: getspecific failed\n");
+				exit(1);
+			}
 			
-			if(porteCle || cache == CLE)
-				set_nbcle(get_nbcle() - 1);
+			if(me->whoami == HERO) {
+				printf("[-] Hero: I'm dead...\n");
+
+				if(me->porteCle || me->cache == CLE)
+					set_nbcle(get_nbcle() - 1);
+					
+				else if(me->porteCle && me->cache == CLE)
+					set_nbcle(get_nbcle() - 2);
+					
+				pthread_cond_signal(&condNbCles);
 				
-			else if(porteCle && cache == CLE)
-				set_nbcle(get_nbcle() - 2);
+				pthread_exit(NULL);
 				
-			pthread_cond_signal(&condNbCles);
-			
-			pthread_exit(NULL);
+			} else if(me->whoami == STATUE) {
+				pthread_exit(NULL);
+			}
 		break;
 	}
+}
+
+void keyDestruc(void *value) {
+	printf("[+] ThreadManager: Destructing...\n");
+	free(value);
+	// pthread_setspecific(spec_key, NULL);
 }
 
 int main(void) {	
@@ -185,10 +227,21 @@ int main(void) {
 	if(pthread_mutex_init(&mutexStatueReady, NULL))
 		fprintf(stderr, "[-] Cannot initialize mutex\n");
 	
+	if(pthread_mutex_init(&mutexScore, NULL))
+		fprintf(stderr, "[-] Cannot initialize mutex\n");
+	
+	if(pthread_mutex_init(&mutexScoreFlags, NULL))
+		fprintf(stderr, "[-] Cannot initialize mutex\n");
+	
+	
+	/* Init Specific Key */
+	if(pthread_key_create(&spec_key, keyDestruc))
+		fprintf(stderr, "[-] Cannot initialize key\n");
+	
+	
 	/* Randomizing hero's position */
 	position_hero.L    = (rand() % 2) ? 5 : 9;
 	destination_hero.L = position_hero.L;
-	cache 		   = VIDE;
 	
 	/* Threading threadHero */
 	printf("[+] Spawning Hero's thread\n");
@@ -205,10 +258,27 @@ int main(void) {
 		diep("[-] pthread_create");
 	
 	/* Clearing */
-	sigemptyset(&sigset);
-	sigaddset(&sigset, SIGUSR1);
-	sigprocmask(SIG_BLOCK, &sigset, NULL);
+	sigdelset(&sigset, SIGUSR1);
 	
+	/* Spawning Statues */
+	nbStatue = 4;
+	for(i = 0; i < nbStatue; i++) {
+		sid = (S_STATUE*) malloc(sizeof(S_STATUE));
+		
+		sid->depart   = positionStatues[i];
+		sid->position = sid->depart;
+		sid->indice   = i;
+		
+		__s_statue_debug[i] = sid;
+		
+		if(pthread_create(&tStatues[i], NULL, threadStatue, sid))
+			diep("[-] pthread_create");
+	}
+	
+	/* Clearing SIG */
+	sigemptyset(&sigset);
+	sigdelset(&sigset, SIGUSR2);
+	sigprocmask(SIG_BLOCK, &sigset, NULL);
 	
 	/* Spawning Event Thread */
 	printf("[+] Spawning threadEvent\n");
@@ -218,6 +288,16 @@ int main(void) {
 	/* Spawning Garde Thread */
 	printf("[+] Spawning threadGarde\n");
 	if(pthread_create(&tGardePorte, NULL, threadGardePorte, NULL))
+		diep("[-] pthread_create");
+	
+	/* Spawning Score Thread */
+	printf("[+] Spawning threadScore\n");
+	if(pthread_create(&tScore, NULL, threadScore, NULL))
+		diep("[-] pthread_create");
+	
+	/* Spawning Bonus Thread */
+	printf("[+] Spawning threadBonus\n");
+	if(pthread_create(&tBonus, NULL, threadBonus, NULL))
 		diep("[-] pthread_create");
 	
 	/* Spawning maitreCles Thread */
@@ -240,21 +320,7 @@ int main(void) {
 	/* Clearing */
 	sigemptyset(&sigset);
 	sigaddset(&sigset, SIGALRM);
-	sigprocmask(SIG_BLOCK, &sigset, NULL);
-	
-	for(i = 0; i < 4; i++) {
-		sid = (S_STATUE*) malloc(sizeof(S_STATUE));
-		
-		sid->depart   = positionStatues[i];
-		sid->position = sid->depart;
-		sid->indice   = i;
-		
-		__s_statue_debug[i] = sid;
-		
-		if(pthread_create(&tStatues[i], NULL, threadStatue, sid))
-			diep("[-] pthread_create");
-	}
-	
+	sigprocmask(SIG_BLOCK, &sigset, NULL);	
 	
 	/* Waiting end of game */
 	pthread_join(tHero, NULL);
@@ -267,14 +333,6 @@ int main(void) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-
-
-
-
-
-
 
 int is_statue_position(position_t pos) {
 	unsigned int i;
