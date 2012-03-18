@@ -20,7 +20,7 @@ void * threadStatue(void *_id) {
 	position_t dest;
 	position_t *chemin = NULL;
 	int nbCases, i, statuePix;
-	struct timespec ts;	
+	struct timespec ts;
 	S_PERSONNAGE *me;
 	
 	/* Pushing exit cleanup */
@@ -217,6 +217,8 @@ int statue_getpix(position_t prev, position_t new, int porteCle) {
 
 void killStatue(void *arg) {
 	S_STATUE *s = (S_STATUE*) arg;
+	struct timespec ts;
+	pthread_t save;
 	
 	pthread_mutex_lock(&mutexTab);
 	
@@ -224,4 +226,17 @@ void killStatue(void *arg) {
 		EffaceCarre(s->position);
 		set_tab_nonblock(s->position, VIDE);
 	}
+	
+	
+	/* Waiting ... */
+	ts.tv_sec  = 5;
+	ts.tv_nsec = 0;
+	
+	nanosleep(&ts, NULL);
+	
+	save = tStatues[s->indice];
+	if(pthread_create(&tStatues[s->indice], NULL, threadStatue, sid))
+			diep("[-] pthread_create");
+	
+	
 }
