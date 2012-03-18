@@ -9,8 +9,8 @@
 #include "interface.h"
 
 pthread_t tStatues[9];
-pthread_mutex_t mutexListeTaches;
-pthread_cond_t condListeTaches;
+pthread_mutex_t mutexListeTaches, mutexStatueReady;
+pthread_cond_t condListeTaches, condStatueReady;
 
 position_t ListeTaches[10];
 
@@ -20,9 +20,8 @@ void * threadStatue(void *_id) {
 	int valeursAutorisees[] = {VIDE, CLE, HERO, SERRURE, TRESOR, PERLE};
 	position_t dest;
 	position_t *chemin = NULL;
-	int nbCases, i, statuePix, retry;
+	int nbCases, i, statuePix;
 	struct timespec ts;
-	char error = 0;
 	
 	printf("[+] Statue #%d ID: %d\n", id->indice, (int) pthread_self());
 	printf("[+] Statue #%d: Spawning at (%d,%d)\n", id->indice, id->depart.L, id->depart.C);
@@ -37,10 +36,9 @@ void * threadStatue(void *_id) {
 	ts.tv_sec = (int) delay;
 	ts.tv_nsec = ((((delay - (int) delay)) * 1.5) * 1000000000) / debug_speed;
 	
-	while(1) {
-		retry = 10;
-		error = 0;
-		
+	pthread_cond_signal(&condStatueReady);
+	
+	while(1) {		
 		printf("[ ] Statue #%d: waiting key...\n", id->indice);
 		
 		pthread_mutex_lock(&mutexListeTaches);
@@ -59,41 +57,54 @@ void * threadStatue(void *_id) {
 		pthread_mutex_unlock(&mutexListeTaches);
 		pthread_mutex_unlock(&mutexIndiceExtraction);
 		
+		calcul:
 		printf("[+] Statue #%d: new position request: %d,%d\n", id->indice, dest.L, dest.C);
 		
 		/* Path finding */
-		calcul:
+		pthread_mutex_lock(&mutexTab);
 		nbCases = RechercheChemin(&tab[0][0], NB_LIGNES, NB_COLONNES, valeursAutorisees, sizeof(valeursAutorisees) / sizeof(int), id->position, dest, &chemin);
 		
 		if(!nbCases || !chemin) {
+			if(compare_position(id->position, dest))
+				continue;
+				
 			printf("[-] Statue #%d: Cannot reach destination (%d,%d)... retrying...\n", id->indice, dest.L, dest.C);
-			sleep(1);
+			
+			pthread_mutex_unlock(&mutexTab);
+			nanosleep(&ts, NULL);
+			
 			goto calcul;
 		}
 		
 		/* Moving */
 		i = 0;
 		while(id->position.C != dest.C || id->position.L != dest.L) {
-			// Locking
-			pthread_mutex_lock(&mutexTab);
-			
+			/* Checking key presence */
 			if(!__porteCle && get_tab_nonblock(dest) != CLE && get_tab_nonblock(dest) != STATUE && get_tab_nonblock(dest) != HERO) {
-				printf("[-] Statue #%d: Key is no longer available (%d,%d = %d)\n", id->indice, dest.L, dest.C, get_tab_nonblock(dest));
+				printf("[-] Statue #%d: Key is no longer available (%d,%d = %d). Back at home.\n", id->indice, dest.L, dest.C, get_tab_nonblock(dest));
 				
 				pthread_mutex_unlock(&mutexTab);
-				error = 1;
-				
-				break;
-			}
-			
-			if(get_tab_nonblock(chemin[i]) == STATUE) {
-				printf("[x] Statue #%d: Collision, recalculing...\n", id->indice);
-				free(chemin);
 				
 				nanosleep(&ts, NULL);
-				pthread_mutex_unlock(&mutexTab);
+				dest = id->depart;
 				
 				goto calcul;
+			}
+			
+			/* Checking Collisions */
+			if(get_tab_nonblock(chemin[i]) == STATUE) {
+				printf("[x] Statue #%d: Collision (%d,%d -> %d,%d = %d), recalculing...\n", id->indice, id->position.L, id->position.C, chemin[i].L, chemin[i].C, get_tab_nonblock(chemin[i]));
+				free(chemin);
+				
+				pthread_mutex_unlock(&mutexTab);
+				nanosleep(&ts, NULL);
+				
+				goto calcul;
+			}
+			
+			if(get_tab_nonblock(chemin[i]) == HERO) {
+				printf("[+] Statue #%d: I killed Hero ! FUCK YEAH\n", id->indice);
+				pthread_kill(tHero, SIGUSR2);
 			}
 			
 			/* Updating cache and current position */
@@ -127,19 +138,20 @@ void * threadStatue(void *_id) {
 		
 		free(chemin);
 		
-		if(error)
-			continue;
-		
 		printf("[+] Statue #%d: destination reached\n", id->indice);
 		
 		/* We are back to home */
 		if(compare_position(id->position, id->depart)) {
 			printf("[+] Statue #%d: I got the key, mouwhahaha\n", id->indice);
-			__porteCle = 0;
 			
-			set_nbcle(get_nbcle() - 1);
+			if(__porteCle)
+				set_nbcle(get_nbcle() - 1);
+			
+			/* Tell KeyMaster to pop new key */	
 			pthread_cond_signal(&condNbCles);
 			
+			/* Clearing key */
+			__porteCle = 0;			
 			continue;
 		}
 		
@@ -148,13 +160,14 @@ void * threadStatue(void *_id) {
 			__porteCle = 1;
 			__cache    = VIDE;
 			
+			/* Updating game map */
 			set_tab(dest, VIDE);
 			EffaceCarre(dest);
-			DessineSprite(dest, TRESOR);
+			DessineSprite(dest, (debug_speed > 1) ? TRESOR : VIDE);
 			
 			printf("[+] Statue #%d: Go back at home !\n", id->indice);
 			
-			// New destination: home
+			/* New destination: home */
 			dest = id->depart;
 			
 			goto calcul;

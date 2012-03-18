@@ -11,7 +11,7 @@ pthread_t tEvent;
 
 void * threadEvent(void *dummy) {
 	EVENT_GRILLE_SDL event;
-	int thiscase;
+	int thiscase, i;
 	
 	while(1) {
 		printf("[ ] Event: waiting event...\n");
@@ -41,6 +41,23 @@ void * threadEvent(void *dummy) {
 							continue;
 						
 						pthread_kill(tHero, SIGUSR1);
+					break;
+					
+					/* DEBUG KEYS */
+					case 'p':
+						printf("[*] Master: freezing...\n");
+						pthread_mutex_lock(&mutexTab);
+						
+						for(i = 0; i < 9; i++)
+							if(__s_statue_debug[i])
+								printf("[D] Statue #%d: position %d,%d\n", i, __s_statue_debug[i]->position.L, __s_statue_debug[i]->position.C);
+						
+						debug_tab();
+					break;
+					
+					case 'o':
+						printf("[*] Master: unfreez...\n");
+						pthread_mutex_unlock(&mutexTab);
 					break;
 				}
 			break;

@@ -15,6 +15,14 @@ void * threadMaitreCles(void *dummy) {
 	/* Initializing mutex */
 	pthread_mutex_init(&mutexNbCles, NULL);
 	
+	printf("[ ] KeyMaster: Waiting first statue...\n");
+	
+	pthread_mutex_lock(&mutexStatueReady);
+	pthread_cond_wait(&condStatueReady, &mutexStatueReady);
+	pthread_mutex_unlock(&mutexStatueReady);
+	
+	printf("[ ] KeyMaster: let's go...\n");
+	
 	while(1) {
 		while(get_nbcle() != 9) {
 			pthread_mutex_lock(&mutexTab);

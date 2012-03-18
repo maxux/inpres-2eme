@@ -275,3 +275,35 @@ int set_heropix(int value) {
 	
 	return value;
 }
+
+
+
+
+
+void debug_tab() {
+	int i, j;
+	
+	printf("    | ");
+	for(j = 0; j < NB_COLONNES; j++)
+		printf("% 3d ", j);
+	
+	printf("\n");
+	
+	for(j = 0; j < NB_COLONNES + 1; j++)
+		printf("----");
+	
+	printf("\n");
+	
+	for(i = 0; i < NB_LIGNES; i++) {
+		printf("% 3d | ", i);
+		
+		for(j = 0; j < NB_COLONNES; j++) {
+			if(tab[i][j] == MUR)
+				printf("\033[1;30m");
+				
+			printf("% 3d \033[0m", tab[i][j]);
+		}
+		
+		printf("\n");
+	}
+}

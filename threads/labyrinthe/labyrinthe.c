@@ -13,6 +13,7 @@
 #include "thread_event.h"
 #include "thread_keymaster.h"
 #include "thread_statue.h"
+#include "thread_gardeporte.h"
 #include "interface.h"
 
 int tab[NB_LIGNES][NB_COLONNES] = {
@@ -69,6 +70,7 @@ hero_flags_t heroFlags = 0;
 int cache;
 
 int debug_speed = 1;
+S_STATUE *__s_statue_debug[9] = {NULL};
 
 void diep(char *s) {
 	perror(s);
@@ -120,6 +122,20 @@ void signal_handler(int signal) {
 		case SIGALRM:
 			printf("[ ] ALARM on Thread ID: %d\n", (int) pthread_self());
 		break;
+		
+		case SIGUSR2:
+			printf("[-] Hero: I'm dead...\n");
+			
+			if(porteCle || cache == CLE)
+				set_nbcle(get_nbcle() - 1);
+				
+			else if(porteCle && cache == CLE)
+				set_nbcle(get_nbcle() - 2);
+				
+			pthread_cond_signal(&condNbCles);
+			
+			pthread_exit(NULL);
+		break;
 	}
 }
 
@@ -165,6 +181,9 @@ int main(void) {
 	
 	if(pthread_mutex_init(&mutexHeroPix, NULL))
 		fprintf(stderr, "[-] Cannot initialize mutex\n");
+		
+	if(pthread_mutex_init(&mutexStatueReady, NULL))
+		fprintf(stderr, "[-] Cannot initialize mutex\n");
 	
 	/* Randomizing hero's position */
 	position_hero.L    = (rand() % 2) ? 5 : 9;
@@ -177,8 +196,10 @@ int main(void) {
 	/* Init Signals */
 	sigfillset(&sigset);
 	sigdelset(&sigset, SIGUSR1);
+	sigdelset(&sigset, SIGUSR2);
 	sigprocmask(SIG_BLOCK, &sigset, NULL);
 	signal_intercept(SIGUSR1, signal_handler);
+	signal_intercept(SIGUSR2, signal_handler);
 	
 	if(pthread_create(&tHero, NULL, threadHero, NULL))
 		diep("[-] pthread_create");
@@ -194,6 +215,10 @@ int main(void) {
 	if(pthread_create(&tEvent, NULL, threadEvent, NULL))
 		diep("[-] pthread_create");
 	
+	/* Spawning Garde Thread */
+	printf("[+] Spawning threadGarde\n");
+	if(pthread_create(&tGardePorte, NULL, threadGardePorte, NULL))
+		diep("[-] pthread_create");
 	
 	/* Spawning maitreCles Thread */
 	printf("[+] Spawning maitreCles\n");
@@ -223,6 +248,8 @@ int main(void) {
 		sid->depart   = positionStatues[i];
 		sid->position = sid->depart;
 		sid->indice   = i;
+		
+		__s_statue_debug[i] = sid;
 		
 		if(pthread_create(&tStatues[i], NULL, threadStatue, sid))
 			diep("[-] pthread_create");

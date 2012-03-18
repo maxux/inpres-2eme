@@ -100,10 +100,12 @@
 	extern float delay;
 
 	/* Threads/Mutex/Conditions */
-	extern pthread_t tHero, tEvent, tPorte, tMaitreCles, tStatues[9];
-	extern pthread_cond_t condDestination, condNbCles, condListeTaches;
-	extern pthread_mutex_t mutexDestination, mutexHero, mutexNbCles, mutexTab, mutexHeroPix,
+	extern pthread_t tHero, tEvent, tPorte, tMaitreCles, tStatues[9], tGardePorte;
+	extern pthread_cond_t condDestination, condNbCles, condListeTaches, condStatueReady;
+	extern pthread_mutex_t mutexDestination, mutexHero, mutexNbCles, mutexTab, mutexHeroPix, mutexStatueReady,
 			       mutexPosition, mutexListeTaches, mutexIndiceInsertion, mutexIndiceExtraction;
+	
+	extern S_STATUE *__s_statue_debug[9];
 
 	extern int nbCles;
 

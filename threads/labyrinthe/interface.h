@@ -32,4 +32,7 @@
 	
 	int get_heropix();
 	int set_heropix(int value);
+	
+	
+	void debug_tab();
 #endif
