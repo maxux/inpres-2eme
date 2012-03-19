@@ -30,10 +30,24 @@ void * threadHero(void *dummy) {
 	pthread_setspecific(spec_key, me);
 	
 	printf("[+] Hero ID: %d\n", (int) pthread_self());
+	
+	/* Init Position */
+	pthread_mutex_lock(&mutexDestination);
+	pthread_mutex_lock(&mutexPosition);
+	
+	position_hero.C    = 16;
+	position_hero.L    = (rand() % 2) ? 5 : 9;
+	
+	destination_hero.L = position_hero.L;
+	destination_hero.C = position_hero.C;
+	
+	pthread_mutex_unlock(&mutexPosition);
+	pthread_mutex_unlock(&mutexDestination);
+	
 	printf("[+] Hero: Spawning at (%d,%d)\n", position_hero.L, position_hero.C);
 	
 	/* Writing Hero's position */
-	set_tab(position_hero, HERO);
+	set_tab(get_position_hero(), HERO);
 	
 	/* Drawing */
 	DessineSprite(get_position_hero(), HERO_FACE_SANS);
@@ -41,8 +55,8 @@ void * threadHero(void *dummy) {
 	/* Init Sleep Time */
 	ts.tv_sec = (int) delay;
 	
-	// ts.tv_nsec = ((delay - (int) delay) * 1000000000) / debug_speed;
-	ts.tv_nsec = ((delay - (int) delay) * 1000000000) / 60;
+	ts.tv_nsec = ((delay - (int) delay) * 1000000000) / debug_speed;
+	// ts.tv_nsec = ((delay - (int) delay) * 1000000000) / 60;
 	
 	while(1) {
 		printf("[ ] Hero: waiting event...\n");
@@ -162,6 +176,28 @@ void * threadHero(void *dummy) {
 			free(chemin);
 			chemin = NULL;
 		}
+		
+		/* Checking end of Level */
+		pthread_mutex_lock(&mutexPosition);
+		
+		if(compare_position(position_hero, position_porte)) {
+			pthread_mutex_lock(&mutexScoreFlags);
+			scoreFlags = EOLEVEL;
+			
+			pthread_cond_signal(&condScore);
+			
+			EffaceCarre(position_hero);
+			DessineSprite(position_hero, PORTE);
+			
+			position_hero.C    = 16;
+			position_hero.L    = (rand() % 2) ? 5 : 9;
+			
+			pthread_cond_signal(&condNiveau);
+			
+			DessineSprite(get_position_hero_nonblock(), HERO_FACE_SANS);	
+		}
+		
+		pthread_mutex_unlock(&mutexPosition);
 	}
 	
 	return dummy;

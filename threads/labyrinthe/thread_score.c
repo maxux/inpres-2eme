@@ -36,6 +36,10 @@ void * threadScore(void *dummy) {
 				score += 40;
 			break;
 			
+			case EOLEVEL:
+				score += 50;
+			break;
+			
 			case GOT_OLD_KEY:
 				score -= 7;
 			break;

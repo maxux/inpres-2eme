@@ -7,6 +7,7 @@
 	int set_tab_nonblock(position_t pos, int value);
 	
 	position_t get_position_hero();
+	position_t get_position_hero_nonblock();
 	position_t set_position_hero(position_t pos);
 	
 	position_t get_destination_hero();

@@ -14,7 +14,7 @@ void * threadGardePorte(void *dummy) {
 	int valeursAutorisees[] = {VIDE, HERO};
 	position_t dest, depart, position;
 	position_t *chemin = NULL;
-	int nbCases, i, gardePix;
+	int nbCases, i, gardePix = GARDE_FACE;
 	struct timespec ts;
 	
 	position_t _depart = {5, 18}, _dest = {9, 18};
@@ -59,6 +59,8 @@ void * threadGardePorte(void *dummy) {
 		while(position.C != dest.C || position.L != dest.L) {
 			if(get_tab_nonblock(chemin[i]) == HERO) {
 				printf("[+] Grunt: I killed Hero ! FUCK YEAH\n");
+				EffaceCarre(chemin[i]);
+				DessineSprite(chemin[i], gardePix);
 				pthread_kill(tHero, SIGUSR2);
 			}
 			

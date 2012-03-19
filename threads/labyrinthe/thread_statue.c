@@ -189,7 +189,7 @@ void * threadStatue(void *_id) {
 		printf("[-] Statue #%d: WTF ?\n", id->indice);
 	}
 	
-	pthread_cleanup_pop(1);
+	pthread_cleanup_pop(0);
 	
 	return id;
 }
@@ -218,8 +218,8 @@ int statue_getpix(position_t prev, position_t new, int porteCle) {
 void killStatue(void *arg) {
 	S_STATUE *s = (S_STATUE*) arg;
 	struct timespec ts;
-	pthread_t save;
 	
+	printf("[+] Statue: Removing...\n");
 	pthread_mutex_lock(&mutexTab);
 	
 	if(get_tab_nonblock(s->position) == STATUE) {
@@ -227,16 +227,18 @@ void killStatue(void *arg) {
 		set_tab_nonblock(s->position, VIDE);
 	}
 	
-	
 	/* Waiting ... */
 	ts.tv_sec  = 5;
 	ts.tv_nsec = 0;
 	
 	nanosleep(&ts, NULL);
 	
-	save = tStatues[s->indice];
-	if(pthread_create(&tStatues[s->indice], NULL, threadStatue, sid))
-			diep("[-] pthread_create");
+	pthread_cancel(tStatues[s->indice]);
 	
+	if(pthread_create(&tStatues[s->indice], NULL, threadStatue, s))
+		diep("[-] pthread_create");
 	
+	pthread_mutex_unlock(&mutexTab);
+	
+	printf("[+] Statue: Removed...\n");
 }

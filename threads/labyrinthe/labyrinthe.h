@@ -71,7 +71,8 @@
 		GOT_OLD_KEY = 2,
 		PUT_KEY     = 4,
 		GOT_PERLE   = 8,
-		GOT_TRESOR  = 16
+		GOT_TRESOR  = 16,
+		EOLEVEL	    = 32
 		
 	} score_flags_t;
 	
@@ -118,10 +119,10 @@
 
 	/* Threads/Mutex/Conditions */
 	extern pthread_key_t spec_key;
-	extern pthread_t tHero, tEvent, tPorte, tMaitreCles, tStatues[9], tGardePorte, tScore, tBonus;
-	extern pthread_cond_t condDestination, condNbCles, condListeTaches, condStatueReady, condScore;
+	extern pthread_t tHero, tEvent, tPorte, tMaitreCles, tStatues[9], tGardePorte, tScore, tBonus, tNiveau;
+	extern pthread_cond_t condDestination, condNbCles, condListeTaches, condStatueReady, condScore, condNiveau;
 	extern pthread_mutex_t mutexDestination, mutexHero, mutexNbCles, mutexTab, mutexHeroPix, mutexStatueReady, mutexScoreFlags,
-			       mutexPosition, mutexListeTaches, mutexIndiceInsertion, mutexIndiceExtraction, mutexScore;
+			       mutexPosition, mutexListeTaches, mutexIndiceInsertion, mutexIndiceExtraction, mutexScore, mutexNiveau;
 	
 	extern S_STATUE *__s_statue_debug[9];
 
@@ -136,8 +137,9 @@
 
 	extern int heroPix;
 	extern int debug_speed;
-	
+	extern int niveau;
 	
 	/* Prototypes */
 	int is_statue_position(position_t pos);
+	void diep(char *s);
 #endif

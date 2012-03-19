@@ -7,8 +7,6 @@
 int get_tab(position_t pos) {
 	int value = -1;
 	
-	// printf("[ ] Requesting get tab\n");
-	
 	if(pos.L > NB_LIGNES || pos.C > NB_COLONNES) {
 		fprintf(stderr, "[-] Overflow request\n");
 		return -1;
@@ -17,8 +15,6 @@ int get_tab(position_t pos) {
 	pthread_mutex_lock(&mutexTab);
 	value = tab[pos.L][pos.C];
 	pthread_mutex_unlock(&mutexTab);
-	
-	// printf("[ ] Requesting get tab: ok\n");
 	
 	return value;
 }
@@ -37,8 +33,6 @@ int get_tab_nonblock(position_t pos) {
 }
 
 int set_tab(position_t pos, int value) {
-	// printf("[ ] Requesting set tab\n");
-	
 	if(pos.L > NB_LIGNES || pos.C > NB_COLONNES) {
 		fprintf(stderr, "[-] Overflow request\n");
 		return -1;
@@ -47,8 +41,6 @@ int set_tab(position_t pos, int value) {
 	pthread_mutex_lock(&mutexTab);
 	tab[pos.L][pos.C] = value;
 	pthread_mutex_unlock(&mutexTab);
-	
-	// printf("[ ] Requesting set tab: done\n");
 	
 	return value;
 }
@@ -68,19 +60,22 @@ int set_tab_nonblock(position_t pos, int value) {
 position_t get_position_hero() {
 	position_t value;
 	
-	// printf("[ ] Requesting get position\n");
 	pthread_mutex_lock(&mutexPosition);
 	value = position_hero;
 	pthread_mutex_unlock(&mutexPosition);
 	
-	// printf("[ ] Requesting get position: done\n");
+	return value;
+}
+
+position_t get_position_hero_nonblock() {
+	position_t value;
+	
+	value = position_hero;
 	
 	return value;
 }
 
 position_t set_position_hero(position_t pos) {
-	// printf("[ ] Requesting set position\n");
-	
 	if(pos.L > NB_LIGNES || pos.C > NB_COLONNES) {
 		fprintf(stderr, "[-] Overflow request\n");
 		return pos;
@@ -90,8 +85,6 @@ position_t set_position_hero(position_t pos) {
 	position_hero = pos;
 	pthread_mutex_unlock(&mutexPosition);
 	
-	// printf("[ ] Requesting set position: done\n");
-	
 	return pos;
 }
 
@@ -99,20 +92,14 @@ position_t set_position_hero(position_t pos) {
 position_t get_destination_hero() {
 	position_t value;
 	
-	// printf("[ ] Requesting get destination\n");
-	
 	pthread_mutex_lock(&mutexDestination);
 	value = destination_hero;
 	pthread_mutex_unlock(&mutexDestination);
-	
-	// printf("[ ] Requesting get destination: done\n");
 	
 	return value;
 }
 
 position_t set_destination_hero(position_t pos) {	
-	// printf("[ ] Requesting set destination\n");
-	
 	if(pos.L > NB_LIGNES || pos.C > NB_COLONNES) {
 		fprintf(stderr, "[-] Overflow request\n");
 		return pos;
@@ -121,8 +108,6 @@ position_t set_destination_hero(position_t pos) {
 	pthread_mutex_lock(&mutexDestination);
 	destination_hero = pos;
 	pthread_mutex_unlock(&mutexDestination);
-	
-	// printf("[ ] Requesting set destination: done\n");
 	
 	return pos;
 }

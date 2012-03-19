@@ -4,8 +4,8 @@
 #include <pthread.h>
 #include <signal.h>
 #include <time.h>
-#include "labyrinthe.h"
 #include "sdl_grind.h"
+#include "labyrinthe.h"
 #include "astar.h" 
 #include "sdl_game.h"
 #include "thread_hero.h"
@@ -16,6 +16,7 @@
 #include "thread_gardeporte.h"
 #include "thread_score.h"
 #include "thread_bonus.h"
+#include "thread_niveau.h"
 #include "interface.h"
 
 int tab[NB_LIGNES][NB_COLONNES] = {
@@ -27,7 +28,10 @@ int tab[NB_LIGNES][NB_COLONNES] = {
 	{1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1}, 
 	{1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 5, 5, 5, 0, 1}, 
 	{1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 5, 5, 5, 0, 0}, 
-	{1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 5, 5, 5, 0, 1}, 
+	{1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 5, 5, 5, 0, 1},
+	// {1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 4, 4, 4, 0, 1}, 
+	// {1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 4, 4, 4, 0, 0}, 
+	// {1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 4, 4, 4, 0, 1}, 
 	{1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1}, 
 	{1, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 1}, 
 	{1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 1, 1, 1, 1}, 
@@ -43,7 +47,7 @@ position_t positionSerrures[SERRURES_COUNT] = {{6, 15}, {6, 16}, {6, 17}, {7,  1
 
 /* Hero's Position */
 pthread_mutex_t mutexPosition;
-position_t position_hero    = {0, 16};
+position_t position_hero;
 
 /* Hero's Destination */
 pthread_mutex_t mutexDestination;
@@ -183,9 +187,12 @@ void keyDestruc(void *value) {
 
 int main(void) {	
 	sigset_t sigset;
-	int level = 1, i;
+	int i, j;
 	S_STATUE *sid;
-	
+	int life = 3;
+	position_t lfpix[] = {{12, 17}, {12, 18}};
+	struct timespec ts;
+		
 	srand((unsigned) time(NULL));
 
 	printf("[+] Initializing game\n");
@@ -233,32 +240,25 @@ int main(void) {
 	if(pthread_mutex_init(&mutexScoreFlags, NULL))
 		fprintf(stderr, "[-] Cannot initialize mutex\n");
 	
+	if(pthread_mutex_init(&mutexNiveau, NULL))
+		fprintf(stderr, "[-] Cannot initialize mutex\n");
 	
 	/* Init Specific Key */
 	if(pthread_key_create(&spec_key, keyDestruc))
 		fprintf(stderr, "[-] Cannot initialize key\n");
 	
-	
-	/* Randomizing hero's position */
-	position_hero.L    = (rand() % 2) ? 5 : 9;
-	destination_hero.L = position_hero.L;
-	
 	/* Threading threadHero */
-	printf("[+] Spawning Hero's thread\n");
+	printf("[+] Spawning Statues thread\n");
 	
 	/* Init Signals */
 	sigfillset(&sigset);
 	sigdelset(&sigset, SIGUSR1);
 	sigdelset(&sigset, SIGUSR2);
+	sigdelset(&sigset, SIGALRM);
 	sigprocmask(SIG_BLOCK, &sigset, NULL);
 	signal_intercept(SIGUSR1, signal_handler);
 	signal_intercept(SIGUSR2, signal_handler);
-	
-	if(pthread_create(&tHero, NULL, threadHero, NULL))
-		diep("[-] pthread_create");
-	
-	/* Clearing */
-	sigdelset(&sigset, SIGUSR1);
+	signal_intercept(SIGALRM, signal_handler);
 	
 	/* Spawning Statues */
 	nbStatue = 4;
@@ -276,9 +276,9 @@ int main(void) {
 	}
 	
 	/* Clearing SIG */
-	sigemptyset(&sigset);
-	sigdelset(&sigset, SIGUSR2);
-	sigprocmask(SIG_BLOCK, &sigset, NULL);
+	/* sigemptyset(&sigset);
+	sigaddset(&sigset, SIGUSR2);
+	sigprocmask(SIG_BLOCK, &sigset, NULL); */
 	
 	/* Spawning Event Thread */
 	printf("[+] Spawning threadEvent\n");
@@ -300,6 +300,10 @@ int main(void) {
 	if(pthread_create(&tBonus, NULL, threadBonus, NULL))
 		diep("[-] pthread_create");
 	
+	printf("[+] Spawning threadNiveau\n");
+	if(pthread_create(&tNiveau, NULL, threadNiveau, NULL))
+		diep("[-] pthread_create");
+	
 	/* Spawning maitreCles Thread */
 	printf("[+] Spawning maitreCles\n");
 	if(pthread_create(&tMaitreCles, NULL, threadMaitreCles, NULL))
@@ -309,21 +313,98 @@ int main(void) {
 	/* Spawning Porte Thread */
 	printf("[+] Spawning Porte\n");
 	
-	sigfillset(&sigset);
-	sigdelset(&sigset, SIGALRM);
+	// sigfillset(&sigset);
+	/* sigdelset(&sigset, SIGALRM);
 	sigprocmask(SIG_BLOCK, &sigset, NULL);
-	signal_intercept(SIGALRM, signal_handler);
+	signal_intercept(SIGALRM, signal_handler); */
 	
 	if(pthread_create(&tPorte, NULL, threadPorte, NULL))
 		diep("[-] pthread_create");
 	
 	/* Clearing */
-	sigemptyset(&sigset);
+	/* sigemptyset(&sigset);
 	sigaddset(&sigset, SIGALRM);
-	sigprocmask(SIG_BLOCK, &sigset, NULL);	
+	sigprocmask(SIG_BLOCK, &sigset, NULL); */
+	
+	/* Hero */
+	
+	// sigfillset(&sigset);
+	/* sigdelset(&sigset, SIGUSR1);
+	sigdelset(&sigset, SIGUSR2);
+	sigprocmask(SIG_BLOCK, &sigset, NULL);
+	signal_intercept(SIGUSR1, signal_handler); */
+	// signal_intercept(SIGUSR2, signal_handler);
+	
+	printf("[+] Spawning Hero\n");
+	
+	if(pthread_create(&tHero, NULL, threadHero, NULL))
+		diep("[-] pthread_create");
+	
+	/* Clearing */
+	/* sigemptyset(&sigset);
+	sigaddset(&sigset, SIGUSR1);
+	sigaddset(&sigset, SIGUSR2);
+	sigprocmask(SIG_BLOCK, &sigset, NULL); */
 	
 	/* Waiting end of game */
-	pthread_join(tHero, NULL);
+	while(life) {
+		pthread_join(tHero, NULL);
+		
+		printf("[+] Re-Spawning Hero\n");
+		
+		life--;
+		printf("[+] Master: Life Remain: %d\n", life);
+		printf("[ ] Master: Clearing Hero...\n");
+		
+		if(life > 0)
+			EffaceCarre(lfpix[life - 1]);
+		else break;
+		
+		printf("[+] Master: Respawning Hero...\b");
+		
+		pthread_mutex_unlock(&mutexPosition);
+		pthread_mutex_unlock(&mutexDestination);
+		
+		if(pthread_create(&tHero, NULL, threadHero, NULL))
+			diep("[-] pthread_create");
+	}
+	
+	for(i = 0; i < nbStatue; i++)
+		pthread_cancel(tStatues[i]);
+	
+	pthread_cancel(tGardePorte);
+	pthread_cancel(tBonus);
+	pthread_cancel(tScore);
+	pthread_cancel(tPorte);
+	pthread_cancel(tEvent);
+	pthread_cancel(tNiveau);
+	
+	ts.tv_sec  = 5;
+	ts.tv_nsec = 0;
+	
+	/* Mapping MUR */
+	printf("Mapping...\n");
+	
+	for(i = 0; i < NB_LIGNES; i++) {
+		position_hero.L = i;
+		
+		for(j = 0; j < NB_COLONNES; j++) {
+			printf(".\n");
+			position_hero.C = j;
+			
+			set_tab_nonblock(position_hero, MUR);
+			
+			EffaceCarre(position_hero);
+			DessineSprite(position_hero, MUR);
+		}
+	} 
+	printf("EO Mapping...\n");
+	position_hero.L = 7;
+	position_hero.C = 8;
+	
+	DessineSprite(position_hero, GAMEOVER);
+	
+	nanosleep(&ts, NULL);
 
 	// Fermeture de la grille de jeu (SDL)
 	printf("[+] Closing map...\n");
