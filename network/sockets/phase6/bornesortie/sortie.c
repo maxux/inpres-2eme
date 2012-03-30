@@ -1,9 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include "barriere.h"
+#include "sortie.h"
 #include "../common/physlib/physlib.h"
 #include "../common/transac.h"
+#include "socket.h"
 
 int actual_transac_id(FILE *fp) {
 	int i = 0;
@@ -25,8 +26,8 @@ void transac_list(FILE *fp) {
 }
 
 int main(int argc, char *argv[]) {
-	int rc, sockfd;
-	char buffer[32];
+	int sockfd;
+	char buffer[32], ticket[32];
 
 	struct sockaddr_in psoo; /* o = origine */
 	struct sockaddr_in psos; /* s = serveur */
@@ -75,60 +76,50 @@ int main(int argc, char *argv[]) {
 	else
 		fprintf(stderr, "CreateSockets %d\n", sockfd);
 
-	printf("BarriereEntree - DANIEL Maxime - 2227\n");
+	printf("SortieParking - DANIEL Maxime - 2227\n");
 
 	while(1) {
 		/* Creating transaction */
+		printf("[ ] Numéro du ticket: ");
+		while(!fgets(ticket, sizeof(ticket), stdin));
+		
 		printf("[ ] Heure du ticket: ");
 		while(!fgets(buffer, sizeof(buffer), stdin));
 		
-		if(*(buffer) == '-' && *(buffer+1) == '1') {
-			transac_list(fp);
-			continue;
-		}
-		
 		memset(&transaction, 0, sizeof(transaction));
-		transaction.action = RESERVATION;
-		transaction.heure  = atoi(buffer);
+		transaction.action     = EXIT;
+		transaction.numticket  = atoi(ticket);
+		transaction.heure      = atoi(buffer);
+		transaction.transac_id = tid;
 
-		/* Sending data */
-		rc = SendDatagram(sockfd, &transaction, sizeof(transaction), &psos) ;
-
-		if(rc == -1)
-			perror("SendDatagram");
-		else
-			fprintf(stderr, "[+] Sending: %d bytes\n", rc);
-
-		/* Clearing transaction */
-		memset(&transaction, 0, sizeof(transaction));
-
-		/* Waiting response */
-		rc = ReceiveDatagram(sockfd, &transaction, sizeof(transaction), &psor) ;
-		if(rc == -1)
-			perror("ReceiveDatagram") ;
-		else
-			fprintf(stderr, "[+] Read: %d\n", rc) ;
-
-		/* Checking response */
-		if(transaction.action == RESERVATION) {
-			printf("\n");
-			printf("+----------------------+\n");
-			printf("| Numéro du ticket: %02ld |\n", transaction.numticket);
-			printf("+----------------------+\n");
+		if(transaction_transmit(sockfd, &transaction, sizeof(transac_t), &psos, &psor) == 0) {
+			/* Checking response */
+			if(transaction.action == EXIT) {
+				printf("\n");
+				printf("+------------------------------------+\n");
+				printf("| Merci de votre visite, à bientôt ! |\n");
+				printf("+------------------------------------+\n");
+				
+			} else {
+				printf("[-] Ticket invalide\n");
+				continue;
+			}
 			
-		} else printf("[-] Data invalid\n");
-		
-		/* Writing data */
-		fseek(fp, 0, SEEK_END);
-		me.transac_id = tid++;
-		me.numticket  = transaction.numticket;
-		
-		// printf("[+] Writing: Transaction: %ld, Ticket: %ld\n", me.transac_id, me.numticket);
-		
-		if(fwrite(&me, sizeof(me), 1, fp) != 1) {
-			perror("fwrite");
-			return -1;
-		}
+			/* Writing data */
+			fseek(fp, 0, SEEK_END);
+			me.transac_id = tid++;
+			me.numticket  = transaction.numticket;
+			
+			printf("[+] Writing: Transaction: %ld, Ticket: %ld\n", me.transac_id, me.numticket);
+			
+			if(fwrite(&me, sizeof(me), 1, fp) != 1) {
+				perror("fwrite");
+				return -1;
+			}
+			
+			transac_list(fp);
+			
+		} else fprintf(stderr, "[-] Cannot contact server\n");
 	}
 	
 	close(sockfd);
