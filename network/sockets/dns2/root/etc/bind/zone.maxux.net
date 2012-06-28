@@ -1,0 +1,21 @@
+maxux.net.	IN	SOA	ns1.maxux.net.	maxux.maxux.net. (
+	1336273524 7200 120 2419200 604800
+)
+
+maxux.net.		IN	NS	ns1.maxux.net.
+maxux.net.		IN	NS	ns2.maxux.net.
+maxux.net.		IN	NS	ns3.maxux.net.
+
+sub.maxux.net.		IN	NS	ns1.sub.maxux.net.
+
+ns1.maxux.net.		IN	A	82.212.175.9
+ns2.maxux.net.		IN	A	91.191.144.113
+ns3.maxux.net.		IN	A	178.170.103.163
+
+www.maxux.net.		IN	A	91.179.47.53
+u.maxux.net.		IN	A	82.212.175.9
+blog.maxux.net.		IN	A	82.212.175.9
+dev.maxux.net.		IN	A	91.179.47.53
+exam.maxux.net.		IN	A	82.212.175.9
+
+ns1.sub.maxux.net.	IN	A	1.2.3.4

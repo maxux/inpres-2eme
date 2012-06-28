@@ -1,0 +1,6 @@
+maxux.net.	IN	SOA	ns1.maxux.net.	maxux.maxux.net. (
+	1336273524 7200 120 2419200 604800
+)
+
+53.47.179.91.in-addr.arpa	IN	PTR	www.maxux.net.
+9.175.212.82.in-addr.arpa	IN	PTR	u.maxux.net.

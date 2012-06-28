@@ -1,0 +1,4 @@
+# This is an example of the hosts file
+127.0.0.1	localhost	loopback
+::1		localhost
+1.2.3.4		plop.maxux.net
